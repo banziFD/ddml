@@ -6,28 +6,11 @@ import torchvision.models as models
 
 class DDMLRes(nn.Module):
     def __init__(self):
-        super(DDML, self).__init__()
+        super(DDMLRes, self).__init__()
         self.feature = models.resnet18(pretrained = True)
         self.feature = nn.Sequential(*list(self.feature.children())[:-1])
-        if (pretrained != None):
-            self.feature.load_state_dict(pretrained)
-            print('Complete load pretrained information')
         self.length = 512
     
-    def  forward(self, x):
-        y = self.feature(x)
-        y = y.reshape(-1, 512)
-        return y
-
-class DDML(nn.Module):
-    def __init__(self, pretrained = None):
-        super(DDML, self).__init__()
-        self.feature = models.resnet18(pretrained = True)
-        self.feature = nn.Sequential(*list(self.feature.children())[:-1])
-        if (pretrained != None):
-            self.feature.load_state_dict(pretrained)
-            print('Complete load pretrained information')
-      
     def  forward(self, x):
         y = self.feature(x)
         y = y.reshape(-1, 512)

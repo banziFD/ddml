@@ -16,7 +16,7 @@ def cifar10Data(datasetPath, select = None):
     trainImage = []
     testFile = glob.glob(datasetPath + '/test*')
 
-    for f in train_files:
+    for f in trainFile:
         current = cifarUnpickle(f)
         currentLabel = current[b'labels']
         currentLabel = torch.tensor(currentLabel)
@@ -29,16 +29,16 @@ def cifar10Data(datasetPath, select = None):
     trainLabel = torch.cat(trainLabel, dim = 0)
     trainImage = torch.cat(trainImage, dim = 0)
 
-    testFile = cifar_unpickle(testFile[0])
+    testFile = cifarUnpickle(testFile[0])
     testLabel = torch.tensor(testFile[b'labels'])
-    testImage = torch.from_numpy(testLabel[b'data'])
+    testImage = torch.from_numpy(testFile[b'data'])
 
     trainImage = trainImage.reshape(trainImage.shape[0], 3, 32, 32)
     testImage = testImage.reshape(testImage.shape[0], 3, 32, 32)
     trainImage = trainImage.permute(0, 2, 3, 1).numpy()
     testImage = testImage.permute(0, 2, 3, 1).numpy()
 
-    return train_labels, train_images, test_labels, test_images
+    return trainLabel, trainImage, testLabel, testImage
 
 def cifar100Data(datasetPath, select = None):
     trainFile = datasetPath + '/train'
@@ -80,7 +80,10 @@ class CifarSet(torch.utils.data.Dataset):
         self.image = torch.load(workPath + '/{}Image'.format(mode))
         self.label = torch.load(workPath + '/{}Label'.format(mode))
         self.vecLabel = vecLabel
-        self.transform = transforms.Compose([transforms.ToPILImage(), transforms.Resize([224, 224]), transforms.ToTensor()， transforms.Normalize(mean = [0.485, 0.456, 0.406], std = [0.229, 0.224, 0.225])])
+        self.transform = transforms.Compose([transforms.ToPILImage(), 
+                                             transforms.Resize([224, 224]), 
+                                             transforms.ToTensor(), 
+                                             transforms.Normalize(mean = [0.485, 0.456, 0.406], std = [0.229, 0.224, 0.225])])
 
     def __getitem__(self, index):
         x = self.image[index]

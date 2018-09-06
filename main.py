@@ -6,8 +6,8 @@ from visdom import Visdom
 import time
 from ddml import DDMLRes
 from ddml import DDMLLoss
-import utils.data.cifar
-from pretrain import Pretrain
+import util.data.cifar as cifar
+import pretrain
 
 def make_hook(flag, data):
     if(flag == 'f'):
@@ -194,7 +194,7 @@ def setParamPretrain():
     p = dict()
     p['lr'] = 0.0001
     p['batch'] = 128
-    p['epoch'] = 10
+    p['epoch'] = 2
     p['gpu'] = True
     p['freq'] = 3
     return p
@@ -210,11 +210,12 @@ def setPath():
 
 def loaderListPretrain():
     path = setPath()
+    pa = setParamPretrain()
     workPath = path['workPath']
 
-    trainData = cifar.cifarSet(workPath, 'train', vecLabel = True)
-    valData = cifar.cifarSet(workPath, 'val', vecLabel = True)
-    testData = cifar.cifarSet(workPath, 'test', vecLabel = True)
+    trainData = cifar.CifarSet(workPath, 'train', vecLabel = True)
+    valData = cifar.CifarSet(workPath, 'val', vecLabel = True)
+    testData = cifar.CifarSet(workPath, 'test', vecLabel = True)
     
     trainLoader = DataLoader(trainData, batch_size = pa['batch'], shuffle = True, drop_last = True, num_workers = 2)
     valLoader = DataLoader(valData, batch_size = pa['batch'], shuffle = True, drop_last = True, num_workers = 2)
@@ -243,30 +244,33 @@ def loaderList():
 def main():
     path = setPath()
     pa = setParam()
-    paPretrain = setParamPretrain()
+    paPre = setParamPretrain()
 
 
     print('Preparing data...')
-    cifar.prepareData(path['datasetPath'], path['workPath'])
+#     cifar.prepareData(path['datasetPath'], path['workPath'])
+    nbClass = 10
     
     print('Loading pretrain data')
-    loaderListPretrain = loaderListPretrain()
+    loaderList = loaderListPretrain()
 
     print('Initializing model and pretrain...')
     ddml = DDMLRes()
-    pretrain = Pretrain(ddml, path['workPath'], paPretrain, loaderListPretrain)
-    pretrain.train()
-    pretrain.test()
-    state = pretrain.getState()
+    pre = pretrain.Pretrain(ddml, path['workPath'], paPre, loaderList, 10)
+#     pre.train()
+#     torch.save(pre, 'pre')
+#     pre.test()
+    state = pre.getState()
     
 
-    input('Complete pretrain, press y to continue')
+    c = input('Complete pretrain, press y to continue')
+    if c != 'y':
+        return 0
 
     print('Loading pretrain information...')
     ddml.load_state_dict(state)
 
     print('Loading data...')
-    ddml = utils_ddml.DDML(feature)
     lossFun = utils_ddml.DDMLLoss(pa['tau'], pa['beta'])
     if pa['gpu']:
         ddml = ddml.cuda()

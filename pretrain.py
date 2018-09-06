@@ -7,27 +7,26 @@ from ddml import DDMLRes
 
 class Classifier(nn.Module):
     def __init__(self, state_dict, nbClass):
+        super(Classifier, self).__init__()
         self.feature = DDMLRes()
         self.feature.load_state_dict(state_dict)
-        self.linear = nn.Linear(feature.length, nbClass)
+        self.linear = nn.Linear(self.feature.length, nbClass)
     
     def forward(self, x):
         y = self.feature(x)
         y = self.linear(y)
         return y
 
-    def getState():
+    def getState(self):
         return self.feature.state_dict()
 
 class Pretrain:
-    def __init__(self, ddml, workPath, pa, loaderList):
+    def __init__(self, ddml, workPath, pa, loaderList, nbClass):
         self.classifier = Classifier(ddml.state_dict(), nbClass)
-        self.workPath = setPath()['workPath']
+        self.workPath = workPath
         self.pa = pa
         self.loaderList = loaderList
-        assert loaderList[0].vecLabel == True
-        assert loaderList[1].vecLabel == True
-        assert loaderList[2].vecLabel == True
+        assert loaderList[0].dataset.vecLabel == True
 
     def __make_hook__(flag, data):
         if flag == 'f':
@@ -39,7 +38,7 @@ class Pretrain:
                 data.append(output)
             return hook
     
-    def __train__(pa, workPath, model, trainLoader, valLoader, lossFun,optim):
+    def __train__(self, pa, workPath, model, trainLoader, valLoader, lossFun, optim):
         vis = Visdom()
         curveX = torch.zeros(pa['epoch'] * 2, 2)
         curveY = torch.zeros(pa['epoch'] * 2)
@@ -116,7 +115,7 @@ class Pretrain:
         
         return model
 
-    def train():
+    def train(self):
         pa = self.pa
         workPath = self.workPath
         print('Initializing pretrain model and loading data...')
@@ -133,9 +132,9 @@ class Pretrain:
         valLoader = self.loaderList[1]
 
         print('Pretraining...')
-        classifier = __train__(pa, workPath, classifier, trainLoader, valLoader, lossFun, optim)
+        self.classifier = self.__train__(pa, workPath, classifier, trainLoader, valLoader, lossFun, optim)
     
-    def test():
+    def test(self):
         pa = self.pa
         workPath = self.workPath
         classifier = self.classifier
@@ -154,16 +153,16 @@ class Pretrain:
                 y = y.cuda()
             
             lbl = y.nonzero()[:, 1]
-            pred = model(x)
+            pred = classifier(x)
 
             pred = torch.argmax(pred, dim = 1)
             res = (pred == lbl)
 
             count += res.shape[0]
             t += torch.sum(res).data.item()
-            print(t, count, t / count)
+        print(t, count, t / count)
 
-    def getState():
+    def getState(self):
         return self.classifier.getState()
     
 if __name__ == '__main__':
