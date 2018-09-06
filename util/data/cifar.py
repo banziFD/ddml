@@ -64,7 +64,7 @@ def cifar100Data(datasetPath, select = None):
 
 def prepareData(datasetPath, workPath, vecLabel = False):
     data = cifar10Data(datasetPath, vecLabel)
-    data = cifar100Data(datasetPath, vecLabel)
+    # data = cifar100Data(datasetPath, vecLabel)
     
     torch.save(data[0],workPath + '/trainLabel')
     torch.save(data[1], workPath + '/trainImage')

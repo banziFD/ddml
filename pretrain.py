@@ -163,7 +163,7 @@ class Pretrain:
             t += torch.sum(res).data.item()
             print(t, count, t / count)
 
-    def getPretrain():
+    def getState():
         return self.classifier.getState()
     
 if __name__ == '__main__':

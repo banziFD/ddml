@@ -177,24 +177,6 @@ def test(pa, workPath, ddml, loader1, loader2, tau):
     print('accuracy: ', count.item() / idx)
     return result
 
-
-def pretrainLoaderList():
-    path = setPath()
-    workPath = path['workPath']
-
-    trainData = cifar.cifarSet(workPath, 'train', vecLabel = True)
-    valData = cifar.cifarSet(workPath, 'val', vecLabel = True)
-    testData = cifar.cifarSet(workPath, 'test', vecLabel = True)
-    
-    trainLoader = DataLoader(trainData, batch_size = pa['batch'], shuffle = True, drop_last = True, num_workers = 2)
-    valLoader = DataLoader(valData, batch_size = pa['batch'], shuffle = True, drop_last = True, num_workers = 2)
-    testLoader = DataLoader(testData, batch_size = pa['batch'], shuffle = True, num_workers = 2)
-    
-    loaderList = [trainLoader, valLoader, testLoader]
-    return loaderList
-
-
-
 def setParam():
     param = dict()
     param['lr'] = 0.00005
@@ -221,10 +203,42 @@ def setPath():
     path = dict()
     path['datasetPath'] = '/home/spyisflying/dataset/cifar/cifar-10-python'
     path['workPath'] = '/home/spyisflying/git/ddml/ex'
-#     path['datasetPath'] = 'd:/dataset/cifar-10-python'
-#     path['workPath'] = 'd:/git/ddml/ex'
+    # path['datasetPath'] = 'd:/dataset/cifar-10-python'
+    # path['workPath'] = 'd:/git/ddml/ex'
     return path
 
+
+def loaderListPretrain():
+    path = setPath()
+    workPath = path['workPath']
+
+    trainData = cifar.cifarSet(workPath, 'train', vecLabel = True)
+    valData = cifar.cifarSet(workPath, 'val', vecLabel = True)
+    testData = cifar.cifarSet(workPath, 'test', vecLabel = True)
+    
+    trainLoader = DataLoader(trainData, batch_size = pa['batch'], shuffle = True, drop_last = True, num_workers = 2)
+    valLoader = DataLoader(valData, batch_size = pa['batch'], shuffle = True, drop_last = True, num_workers = 2)
+    testLoader = DataLoader(testData, batch_size = pa['batch'], shuffle = True, num_workers = 2)
+    
+    loaderList = [trainLoader, valLoader, testLoader]
+    return loaderList
+
+
+def loaderList():
+    trainData1 = utils_data.DDMLData(path['workPath'], 'train')
+    trainData2 = utils_data.DDMLData(path['workPath'], 'train')
+    valData = utils_data.DDMLData(path['workPath'], 'val')
+    testData = utils_data.DDMLData(path['workPath'], 'test')
+
+
+    trainLoader1 = DataLoader(trainData1, batch_size = pa['batch'], shuffle = True, drop_last = True, num_workers = 2)
+    trainLoader2 = DataLoader(trainData2, batch_size = pa['batch'], shuffle = True, drop_last = True, num_workers = 2)
+    valLoader1 = DataLoader(valData, batch_size = pa['batch'], shuffle = True, drop_last = True, num_workers = 2)
+    valLoader2 = DataLoader(valData, batch_size = pa['batch'], shuffle = True, drop_last = True, num_workers = 2)
+    testLoader1 = DataLoader(testData, batch_size = pa['batch'], shuffle = True, drop_last = True, num_workers = 2)
+    testLoader2 = DataLoader(trainData1, batch_size = pa['batch'], shuffle = True, drop_last = True, num_workers = 2)
+
+    loaderList
 
 def main():
     path = setPath()
@@ -236,27 +250,20 @@ def main():
     cifar.prepareData(path['datasetPath'], path['workPath'])
     
     print('Loading pretrain data')
-    pretrainLoaderList = pretrainLoaderList()
+    loaderListPretrain = loaderListPretrain()
 
     print('Initializing model and pretrain...')
     ddml = DDMLRes()
-    pretrain = Pretrain(ddml, path['workPath'], paPretrain, pretrainLoaderList)
+    pretrain = Pretrain(ddml, path['workPath'], paPretrain, loaderListPretrain)
     pretrain.train()
     pretrain.test()
-
-
-
-
+    state = pretrain.getState()
+    
 
     input('Complete pretrain, press y to continue')
 
-
-
-
-
-
-
-
+    print('Loading pretrain information...')
+    ddml.load_state_dict(state)
 
     print('Loading data...')
     ddml = utils_ddml.DDML(feature)
@@ -277,25 +284,6 @@ def main():
     result = test(pa, path['workPath'], ddml, testLoader1, testLoader2, pa['tau'])
     torch.save(result, path['workPath'] + '/result')
     
-    
-
-
-def trainLoaderList():
-    trainData1 = utils_data.DDMLData(path['workPath'], 'train')
-    trainData2 = utils_data.DDMLData(path['workPath'], 'train')
-    valData = utils_data.DDMLData(path['workPath'], 'val')
-    testData = utils_data.DDMLData(path['workPath'], 'test')
-
-
-    trainLoader1 = DataLoader(trainData1, batch_size = pa['batch'], shuffle = True, drop_last = True, num_workers = 2)
-    trainLoader2 = DataLoader(trainData2, batch_size = pa['batch'], shuffle = True, drop_last = True, num_workers = 2)
-    valLoader1 = DataLoader(valData, batch_size = pa['batch'], shuffle = True, drop_last = True, num_workers = 2)
-    valLoader2 = DataLoader(valData, batch_size = pa['batch'], shuffle = True, drop_last = True, num_workers = 2)
-    testLoader1 = DataLoader(testData, batch_size = pa['batch'], shuffle = True, drop_last = True, num_workers = 2)
-    testLoader2 = DataLoader(trainData1, batch_size = pa['batch'], shuffle = True, drop_last = True, num_workers = 2)
-
-    
-
 
 
 if __name__ == '__main__':
