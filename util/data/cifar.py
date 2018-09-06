@@ -10,7 +10,7 @@ def cifarUnpickle(file):
         dict = pickle.load(fo, encoding = 'bytes')
         return dict
 
-def cifar10Data(datasetPath, vecLabel, select = None):
+def cifar10Data(datasetPath, select = None):
     trainFile = glob.glob(datasetPath + '/data*')
     trainLabel = []
     trainImage = []
@@ -38,19 +38,9 @@ def cifar10Data(datasetPath, vecLabel, select = None):
     trainImage = trainImage.permute(0, 2, 3, 1).numpy()
     testImage = testImage.permute(0, 2, 3, 1).numpy()
 
-    if vecLabel:
-        train_label_temp = torch.zeros(train_labels.shape[0], 10, dtype = torch.float)
-        test_label_temp = torch.zeros(test_labels.shape[0], 10, dtype = torch.float)
-        for i in range(train_images.shape[0]):
-            train_label_temp[i][train_labels[i]] = 1
-        for i in range(test_images.shape[0]):
-            test_label_temp[i][test_labels[i]] = 1
-        train_labels = train_label_temp
-        test_labels = test_label_temp
-
     return train_labels, train_images, test_labels, test_images
 
-def cifar100Data(datasetPath, vecLabel, select = None):
+def cifar100Data(datasetPath, select = None):
     trainFile = datasetPath + '/train'
     testFile = datasetPath + '/test'
 
@@ -69,16 +59,6 @@ def cifar100Data(datasetPath, vecLabel, select = None):
     testImage = testImage.reshape(testImage.shape[0], 3, 32, 32)
     trainImage = trainImage.permute(0, 2, 3, 1).numpy()
     testImage = testImage.permute(0, 2, 3, 1).numpy()
-    
-    if vecLabel:
-        trainLabelTemp = torch.zeros(train_labels.shape[0], 100, dtype = torch.float)
-        testLabelTemp = torch.zeros(test_labels.shape[0], 100, dtype = torch.float)
-        for i in range(train_images.shape[0]):
-            trainLabelTemp[i][trainLabel[i]] = 1
-        for i in range(test_images.shape[0]):
-            testLabelTemp[i][testLabel[i]] = 1
-        trainLabel = trainLabelTemp
-        testLabel = testLabelTemp
 
     return trainLabel, trainImage, testLabel, testImage
 
@@ -94,17 +74,22 @@ def prepareData(datasetPath, workPath, vecLabel = False):
     torch.save(data[3], workPath + '/valImage')
 
 class CifarSet(torch.utils.data.Dataset):
-    def __init__(self, workPath, mode = 'train'):
+    def __init__(self, workPath, mode = 'train', vecLabel = False):
         super(CifarSet, self).__init__()
         self.mode = mode
         self.image = torch.load(workPath + '/{}Image'.format(mode))
         self.label = torch.load(workPath + '/{}Label'.format(mode))
+        self.vecLabel = vecLabel
         self.transform = transforms.Compose([transforms.ToPILImage(), transforms.Resize([224, 224]), transforms.ToTensor()， transforms.Normalize(mean = [0.485, 0.456, 0.406], std = [0.229, 0.224, 0.225])])
 
     def __getitem__(self, index):
         x = self.image[index]
         x = self.transform(x)
         y = self.label[index]
+        if(self.vecLabel):
+            t = torch.zeros(10)
+            t[y] = 1
+            y = t
         return x, y
     
     def __len__(self):

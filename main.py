@@ -4,9 +4,10 @@ from torch.utils.data import DataLoader
 import torchvision.transforms as transforms
 from visdom import Visdom
 import time
-import utils_ddml
-import utils_data
-from cifar.utils_model import CNN as Feature
+from ddml import DDMLRes
+from ddml import DDMLLoss
+import utils.data.cifar
+from pretrain import Pretrain
 
 def make_hook(flag, data):
     if(flag == 'f'):
@@ -17,11 +18,6 @@ def make_hook(flag, data):
         def hook(m, input, output):
             data.append(output)
         return hook
-
-def getFeature(state):
-    feature = Feature()
-    feature.load_state_dict(state)
-    return feature.getFeatureDict()
 
 def train(pa, workPath, ddml, trainLoader1, trainLoader2, valLoader1, valLoader2, lossFun, optim):
     vis = Visdom()
@@ -44,11 +40,11 @@ def train(pa, workPath, ddml, trainLoader1, trainLoader2, valLoader1, valLoader2
         for step, (x1, label1) in enumerate(trainLoader1):
             (x2, label2) = it.__next__()
             sim = (label1 == label2)
-#             if(step == 0):
-#                 inter_feature = []
-                # handle1 = ddml.feature.linear1.register_forward_hook(make_hook('f', inter_feature))
-                # handle2 = ddml.feature.linear2.register_forward_hook(make_hook('f', inter_feature))
-                # handle3 = ddml.feature.linear3.register_forward_hook(make_hook('f', inter_feature))
+            # if(step == 0):
+            #     inter_feature = []
+            #     handle1 = ddml.feature.linear1.register_forward_hook(make_hook('f', inter_feature))
+            #     handle2 = ddml.feature.linear2.register_forward_hook(make_hook('f', inter_feature))
+            #     handle3 = ddml.feature.linear3.register_forward_hook(make_hook('f', inter_feature))
             x1.requires_grad = False;
             x2.requires_grad = False;
             if(pa['gpu']):
@@ -74,20 +70,20 @@ def train(pa, workPath, ddml, trainLoader1, trainLoader2, valLoader1, valLoader2
             freqError += loss.data.item()
 
             # if step == 0:
-#                 inter_feature = [item[0][0:10] for item in inter_feature]
-                # temp = inter_feature[5]
-                # inter_feature = inter_feature[0:3]
-                # inter_feature[2] = inter_feature[2] - temp
-                # inter_feature[0] = inter_feature[0].reshape(-1, 3, 32, 32)
-                # inter_feature[1] = inter_feature[1].reshape(-1, 1, 16, 16)
-                # inter_feature[2] = inter_feature[2].reshape(-1, 1, 16, 16)
-                # vis.images(inter_feature[0], nrow = 1, opts = {'caption' : win1}, win = win1)
-                # vis.images(inter_feature[1] * 100, nrow = 1, opts = {'caption' : win2}, win = win2)
-                # vis.images(inter_feature[2] * 100, nrow = 1, opts = {'caption' : win3}, win = win3)
-                # del inter_feature
-                # handle1.remove()
-                # handle2.remove()
-                # handle3.remove()
+            #     inter_feature = [item[0][0:10] for item in inter_feature]
+            #     temp = inter_feature[5]
+            #     inter_feature = inter_feature[0:3]
+            #     inter_feature[2] = inter_feature[2] - temp
+            #     inter_feature[0] = inter_feature[0].reshape(-1, 3, 32, 32)
+            #     inter_feature[1] = inter_feature[1].reshape(-1, 1, 16, 16)
+            #     inter_feature[2] = inter_feature[2].reshape(-1, 1, 16, 16)
+            #     vis.images(inter_feature[0], nrow = 1, opts = {'caption' : win1}, win = win1)
+            #     vis.images(inter_feature[1] * 100, nrow = 1, opts = {'caption' : win2}, win = win2)
+            #     vis.images(inter_feature[2] * 100, nrow = 1, opts = {'caption' : win3}, win = win3)
+            #     del inter_feature
+            #     handle1.remove()
+            #     handle2.remove()
+            #     handle3.remove()
             
             if (step + 1) % pa['freq'] == 0:
                 if(freqError > 10000000):
@@ -182,48 +178,23 @@ def test(pa, workPath, ddml, loader1, loader2, tau):
     return result
 
 
-def main():
+def pretrainLoaderList():
     path = setPath()
-    pa = setParam()
+    workPath = path['workPath']
 
-    print('Preparing data...')
-#     utils_data.prepareData(path['datasetPath'], path['workPath'])
+    trainData = cifar.cifarSet(workPath, 'train', vecLabel = True)
+    valData = cifar.cifarSet(workPath, 'val', vecLabel = True)
+    testData = cifar.cifarSet(workPath, 'test', vecLabel = True)
     
-    state = torch.load(path['workPath'] + '/modelState')
-    feature = getFeature(state)
-
-    print('Initializing model and loading data...')
-    ddml = utils_ddml.DDML(feature)
-    lossFun = utils_ddml.DDMLLoss(pa['tau'], pa['beta'])
-    if pa['gpu']:
-        ddml = ddml.cuda()
-        lossFun = lossFun.cuda()
-    optim = torch.optim.Adam(ddml.parameters(), lr = pa['lr'], weight_decay = 1e-6)
-
-    trainData1 = utils_data.DDMLData(path['workPath'], 'train')
-    trainData2 = utils_data.DDMLData(path['workPath'], 'train')
-    valData = utils_data.DDMLData(path['workPath'], 'val')
-    testData = utils_data.DDMLData(path['workPath'], 'test')
-
-
-    trainLoader1 = DataLoader(trainData1, batch_size = pa['batch'], shuffle = True, drop_last = True, num_workers = 2)
-    trainLoader2 = DataLoader(trainData2, batch_size = pa['batch'], shuffle = True, drop_last = True, num_workers = 2)
-    valLoader1 = DataLoader(valData, batch_size = pa['batch'], shuffle = True, drop_last = True, num_workers = 2)
-    valLoader2 = DataLoader(valData, batch_size = pa['batch'], shuffle = True, drop_last = True, num_workers = 2)
-    testLoader1 = DataLoader(testData, batch_size = pa['batch'], shuffle = True, drop_last = True, num_workers = 2)
-    testLoader2 = DataLoader(trainData1, batch_size = pa['batch'], shuffle = True, drop_last = True, num_workers = 2)
-
-    print('Training...')
-#     train(pa, path['workPath'], ddml, trainLoader1, trainLoader2, valLoader1, valLoader2, lossFun, optim)
-#     torch.save(ddml, path['workPath'] + '/ddml')
-
-    ddml = torch.load(path['workPath'] + '/ddml')
-
-    print('Testing...')
-    result = test(pa, path['workPath'], ddml, testLoader1, testLoader2, pa['tau'])
-    torch.save(result, path['workPath'] + '/result')
+    trainLoader = DataLoader(trainData, batch_size = pa['batch'], shuffle = True, drop_last = True, num_workers = 2)
+    valLoader = DataLoader(valData, batch_size = pa['batch'], shuffle = True, drop_last = True, num_workers = 2)
+    testLoader = DataLoader(testData, batch_size = pa['batch'], shuffle = True, num_workers = 2)
     
-    
+    loaderList = [trainLoader, valLoader, testLoader]
+    return loaderList
+
+
+
 def setParam():
     param = dict()
     param['lr'] = 0.00005
@@ -237,6 +208,15 @@ def setParam():
     param['milestones'] = [30, 60, 90, 120, 150, 180, 210]
     return param
 
+def setParamPretrain():
+    p = dict()
+    p['lr'] = 0.0001
+    p['batch'] = 128
+    p['epoch'] = 10
+    p['gpu'] = True
+    p['freq'] = 3
+    return p
+
 def setPath():
     path = dict()
     path['datasetPath'] = '/home/spyisflying/dataset/cifar/cifar-10-python'
@@ -244,6 +224,79 @@ def setPath():
 #     path['datasetPath'] = 'd:/dataset/cifar-10-python'
 #     path['workPath'] = 'd:/git/ddml/ex'
     return path
+
+
+def main():
+    path = setPath()
+    pa = setParam()
+    paPretrain = setParamPretrain()
+
+
+    print('Preparing data...')
+    cifar.prepareData(path['datasetPath'], path['workPath'])
+    
+    print('Loading pretrain data')
+    pretrainLoaderList = pretrainLoaderList()
+
+    print('Initializing model and pretrain...')
+    ddml = DDMLRes()
+    pretrain = Pretrain(ddml, path['workPath'], paPretrain, pretrainLoaderList)
+    pretrain.train()
+    pretrain.test()
+
+
+
+
+
+    input('Complete pretrain, press y to continue')
+
+
+
+
+
+
+
+
+
+    print('Loading data...')
+    ddml = utils_ddml.DDML(feature)
+    lossFun = utils_ddml.DDMLLoss(pa['tau'], pa['beta'])
+    if pa['gpu']:
+        ddml = ddml.cuda()
+        lossFun = lossFun.cuda()
+    optim = torch.optim.Adam(ddml.parameters(), lr = pa['lr'], weight_decay = 1e-6)
+
+    
+    print('Training...')
+#     train(pa, path['workPath'], ddml, trainLoader1, trainLoader2, valLoader1, valLoader2, lossFun, optim)
+#     torch.save(ddml, path['workPath'] + '/ddml')
+
+    ddml = torch.load(path['workPath'] + '/ddml')
+
+    print('Testing...')
+    result = test(pa, path['workPath'], ddml, testLoader1, testLoader2, pa['tau'])
+    torch.save(result, path['workPath'] + '/result')
+    
+    
+
+
+def trainLoaderList():
+    trainData1 = utils_data.DDMLData(path['workPath'], 'train')
+    trainData2 = utils_data.DDMLData(path['workPath'], 'train')
+    valData = utils_data.DDMLData(path['workPath'], 'val')
+    testData = utils_data.DDMLData(path['workPath'], 'test')
+
+
+    trainLoader1 = DataLoader(trainData1, batch_size = pa['batch'], shuffle = True, drop_last = True, num_workers = 2)
+    trainLoader2 = DataLoader(trainData2, batch_size = pa['batch'], shuffle = True, drop_last = True, num_workers = 2)
+    valLoader1 = DataLoader(valData, batch_size = pa['batch'], shuffle = True, drop_last = True, num_workers = 2)
+    valLoader2 = DataLoader(valData, batch_size = pa['batch'], shuffle = True, drop_last = True, num_workers = 2)
+    testLoader1 = DataLoader(testData, batch_size = pa['batch'], shuffle = True, drop_last = True, num_workers = 2)
+    testLoader2 = DataLoader(trainData1, batch_size = pa['batch'], shuffle = True, drop_last = True, num_workers = 2)
+
+    
+
+
 
 if __name__ == '__main__':
     main()

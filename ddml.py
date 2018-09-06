@@ -4,32 +4,16 @@ import torch.nn as nn
 import torchvision.transforms as transforms
 import torchvision.models as models
 
-class ResFeature(nn.Module):
-    def __init__(self, numberClass = 10):
-        super(CNN, self).__init__()
-        resnet = models.resnet18(pretrained = True)
-        resnet = list(resnet.children())[:-1]
-        self.feature = nn.Sequential(*resnet)
-        self.linear = nn.Linear(512, numberClass)
-
-    def forward(self, x):
-        y = self.feature(x)
-        y = y.view(-1, 512)
-        y = self.linear(y)
-        return y
-
-    def getFeatureDict(self):
-        return self.feature.state_dict()
-
 class DDMLRes(nn.Module):
-    def __init__(self, pretraine = None):
+    def __init__(self):
         super(DDML, self).__init__()
-        self.feature = models.ResFeature()
+        self.feature = models.resnet18(pretrained = True)
         self.feature = nn.Sequential(*list(self.feature.children())[:-1])
-        if (pretraine != None):
-            self.feature.load_state_dict(pretraine)
-            print('Load pretraine information sucess')
-      
+        if (pretrained != None):
+            self.feature.load_state_dict(pretrained)
+            print('Complete load pretrained information')
+        self.length = 512
+    
     def  forward(self, x):
         y = self.feature(x)
         y = y.reshape(-1, 512)

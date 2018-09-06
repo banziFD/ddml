@@ -5,7 +5,7 @@ import torch
 import torch
 import torchvision.transforms as transforms
 
-def msrcvData(datasetPath, select = [2, 3, 4, 5, 6, 7, 8]):
+def msrcvData(datasetPath, select):
     image = np.zeros(len(select) * 30, 224, 224, 3, dtype = np.uint8)
     label = np.zeros(len(select) * 30, dtype = np.uint8)
     idx = 0
@@ -22,8 +22,8 @@ def msrcvData(datasetPath, select = [2, 3, 4, 5, 6, 7, 8]):
             idx += 1
     return image, label, image, label
 
-def prepareData(datasetPath, workPath, vecLabel = False):
-    data = msrcv1Data(datasetPath, vecLabel)
+def prepareData(datasetPath, workPath, select = [2, 3, 4, 5, 6, 7, 8]):
+    data = msrcv1Data(datasetPath, select)
     
     torch.save(data[0],workPath + '/trainLabel')
     torch.save(data[1], workPath + '/trainImage')
@@ -33,17 +33,22 @@ def prepareData(datasetPath, workPath, vecLabel = False):
     torch.save(data[3], workPath + '/valImage')
 
 class MsrcvSet(torch.utils.data.Dataset):
-    def __init__(self, workPath, mode = 'train'):
+    def __init__(self, workPath, mode = 'train', vecLabel = False):
         super(MarcvSet, self).__init__()
         self.mode = mode
         self.image = torch.load(workPath + '/{}Image'.format(mode))
         self.label = torch.load(workPath + '/{}Label'.format(mode))
         self.transform = transforms.Compose([transforms.ToTensor()， transforms.Normalize(mean = [0.485, 0.456, 0.406], std = [0.229, 0.224, 0.225])])
+        self.vecLabel = vecLabel
 
     def __getitem__(self, index):
         x = self.image[index]
         x = self.transform(x)
         y = self.label[index]
+        if(self.vecLabel):
+            t = torch.zeros(10)
+            t[y] = 1
+            y = t
         return x, y
 
     def __len__(self):
