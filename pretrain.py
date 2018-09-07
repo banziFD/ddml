@@ -3,12 +3,12 @@ import torch.nn as nn
 from torch.utils.data import DataLoader 
 import time
 from visdom import Visdom
-from ddml import DDMLRes
+from ddml import ResFeature
 
 class Classifier(nn.Module):
     def __init__(self, state_dict, nbClass):
         super(Classifier, self).__init__()
-        self.feature = DDMLRes()
+        self.feature = ResFeature()
         self.feature.load_state_dict(state_dict)
         self.linear = nn.Linear(self.feature.length, nbClass)
     
@@ -21,14 +21,15 @@ class Classifier(nn.Module):
         return self.feature.state_dict()
 
 class Pretrain:
-    def __init__(self, ddml, workPath, pa, loaderList, nbClass):
-        self.classifier = Classifier(ddml.state_dict(), nbClass)
+    def __init__(self, pa, featureNet, workPath, loaderList, nbClass):
+        self.classifier = Classifier(featureNet.state_dict(), nbClass)
         self.workPath = workPath
         self.pa = pa
         self.loaderList = loaderList
         assert loaderList[0].dataset.vecLabel == True
+   
 
-    def __make_hook__(flag, data):
+    def __makeHook__(flag, data):
         if flag == 'f':
             def hook(m, input, output):
                 data.append(input)
