@@ -104,7 +104,7 @@ def main():
     pa = setParam()
     ddml = DDML(pa, featureNet, path['workPath'], loader)
     print('Training...')
-    ddml.train()
+    # ddml.train()
     torch.save(ddml, path['workPath'] + '/ddml')
     
     ddml = torch.load(path['workPath'] + '/ddml')

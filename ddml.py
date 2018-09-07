@@ -41,11 +41,11 @@ class DDMLLoss(nn.Module):
         return loss
 
 class DDML:
-    def __init__(self, pa, featureNet, workPath, loaderList):
+    def __init__(self, pa, featureNet, workPath, loader):
         self.featureNet = featureNet
         self.workPath = workPath
         self.pa = pa
-        self.loaderList = loaderList
+        self.loader = loader
 
     def __makeHook__(flag, data):
         if flag == 'f':
@@ -168,14 +168,13 @@ class DDML:
             
             vis.scatter(curveX[0:curve], curveY[0:curve], win = 'win1')
             print(e, time.time() - start, trainError, valError)
-            
             torch.save(ddml.state_dict(), workPath + '/featureNetState{}'.format(e))
 
 
-    def __test__(self, pa, workPath, ddml, loader1, loader2, tau):
-        ddml.eval()
+    def __test__(self, pa, workPath, featureNet, loader1, loader2, tau):
+        featureNet.eval()
         if(pa['gpu']):
-            ddml = ddml.cuda()
+            featureNet = featureNet.cuda()
         result = torch.zeros(int(loader1.dataset.__len__()), 5)
         idx = 0
         count = 0
@@ -194,8 +193,8 @@ class DDML:
                 x2 = x2.cuda()
                 sim = sim.cuda()
 
-            y1 = ddml(x1)
-            y2 = ddml(x2)
+            y1 = featureNet(x1)
+            y2 = featureNet(x2)
             y = y1 - y2
             y = torch.tensor(y.data, requires_grad = False)
             distance = torch.norm(y, 2, 1)
@@ -219,10 +218,10 @@ class DDML:
     def train(self):
         pa = self.pa
         workPath = self.workPath
-        trainLoader1 = self.loaderList[0]
-        trainLoader2 = self.loaderList[1]
-        valLoader1 = self.loaderList[2]
-        valLoader2 = self.loaderList[3]
+        trainLoader1 = self.loader[0]
+        trainLoader2 = self.loader[1]
+        valLoader1 = self.loader[2]
+        valLoader2 = self.loader[3]
 
         featureNet = self.featureNet
 
@@ -236,11 +235,12 @@ class DDML:
         self.featureNet = self.__train__(pa, workPath, featureNet, trainLoader1, trainLoader2, valLoader1, valLoader2, lossFun, optim)
 
     def test(self):
+        pa = self.pa
+        workPath = self.workPath
         featureNet = self.featureNet
-        testLoader1 = loaderList[4]
-        testLoader2 = loaderList[5]
-        print('Testing...')
-        result = self.__test__(pa, workPath, ddml, testLoader1, testLoader2, pa['tau'])
+        testLoader1 = self.loader[4]
+        testLoader2 = self.loader[5]
+        result = self.__test__(pa, workPath, featureNet, testLoader1, testLoader2, pa['tau'])
         torch.save(result, workPath + '/result')
         return result
     
