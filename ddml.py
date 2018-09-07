@@ -169,7 +169,7 @@ class DDML:
             vis.scatter(curveX[0:curve], curveY[0:curve], win = 'win1')
             print(e, time.time() - start, trainError, valError)
             torch.save(ddml.state_dict(), workPath + '/featureNetState{}'.format(e))
-
+        return ddml
 
     def __test__(self, pa, workPath, featureNet, loader1, loader2, tau):
         featureNet.eval()
@@ -230,8 +230,7 @@ class DDML:
             featureNet = featureNet.cuda()
             lossFun = lossFun.cuda()
         optim = torch.optim.Adam(featureNet.parameters(), lr = pa['lr'], weight_decay = 1e-6)
-
-        print('Training...')
+        
         self.featureNet = self.__train__(pa, workPath, featureNet, trainLoader1, trainLoader2, valLoader1, valLoader2, lossFun, optim)
 
     def test(self):
@@ -241,7 +240,6 @@ class DDML:
         testLoader1 = self.loader[4]
         testLoader2 = self.loader[5]
         result = self.__test__(pa, workPath, featureNet, testLoader1, testLoader2, pa['tau'])
-        torch.save(result, workPath + '/result')
         return result
     
 
