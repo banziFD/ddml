@@ -146,8 +146,8 @@ class Pretrain:
         t = 0
         if pa['gpu']:
             classifier = classifier.cuda()
+        
         classifier = classifier.eval()
-
         for step, (x, y) in enumerate(testLoader):
             if pa['gpu']:
                 x = x.cuda()

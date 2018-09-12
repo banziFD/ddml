@@ -8,10 +8,10 @@ from pretrain import Pretrain
 
 def setPath():
     path = dict()
-    # path['datasetPath'] = '/home/spyisflying/dataset/cifar/cifar-10-python'
-    # path['workPath'] = '/home/spyisflying/git/ddml/ex'
-    path['datasetPath'] = 'd:/dataset/cifar-10-python'
-    path['workPath'] = 'd:/git/ddml/ex'
+    path['datasetPath'] = '/home/spyisflying/dataset/cifar/cifar-10-python'
+    path['workPath'] = '/home/spyisflying/git/ddml/ex'
+#     path['datasetPath'] = 'd:/dataset/cifar-10-python'
+#     path['workPath'] = 'd:/git/ddml/ex'
     return path
 
 def setParamPre():
@@ -27,9 +27,9 @@ def setParamPre():
 def setParam():
     param = dict()
     param['lr'] = 0.00005
-    param['batch'] = 2
-    param['epoch'] = 5
-    param['gpu'] = False
+    param['batch'] = 128
+    param['epoch'] = 10
+    param['gpu'] = True
     param['tau'] = 1.5
     param['beta'] = 1
     param['lambda'] = 0.2
@@ -57,17 +57,17 @@ def loaderList():
     path = setPath()
     pa = setParam()
     
-    trainData1 = cifar.CifarSet(path['workPath'], 'train')
-    trainData2 = cifar.CifarSet(path['workPath'], 'train')
-    valData = cifar.CifarSet(path['workPath'], 'val')
-    testData = cifar.CifarSet(path['workPath'], 'test')
+    trainData1 = cifar.CifarSet(path['workPath'], 'train', vecLabel = False)
+    trainData2 = cifar.CifarSet(path['workPath'], 'train', vecLabel = False)
+    valData = cifar.CifarSet(path['workPath'], 'val', vecLabel = False)
+    testData = cifar.CifarSet(path['workPath'], 'test', vecLabel = False)
 
     trainLoader1 = DataLoader(trainData1, batch_size = pa['batch'], shuffle = True, drop_last = True, num_workers = 2)
     trainLoader2 = DataLoader(trainData2, batch_size = pa['batch'], shuffle = True, drop_last = True, num_workers = 2)
     valLoader1 = DataLoader(valData, batch_size = pa['batch'], shuffle = True, drop_last = True, num_workers = 2)
     valLoader2 = DataLoader(valData, batch_size = pa['batch'], shuffle = True, drop_last = True, num_workers = 2)
     testLoader1 = DataLoader(testData, batch_size = pa['batch'], shuffle = True, drop_last = True, num_workers = 2)
-    testLoader2 = DataLoader(trainData1, batch_size = pa['batch'], shuffle = True, drop_last = True, num_workers = 2)
+    testLoader2 = DataLoader(testData, batch_size = pa['batch'], shuffle = True, drop_last = True, num_workers = 2)
 
     loaderList = [trainLoader1, trainLoader2, valLoader1, valLoader2, testLoader1, testLoader2]
     return loaderList
@@ -76,7 +76,7 @@ def main():
     path = setPath()
 
     print('Preparing data...')
-    # cifar.prepareData(path['datasetPath'], path['workPath'])
+#     cifar.prepareData(path['datasetPath'], path['workPath'])
     nbClass = 10
     
     print('Loading pretrain data')
@@ -87,13 +87,15 @@ def main():
     featureNet = ResFeature()
     pre = Pretrain(pa, featureNet, path['workPath'], loader, nbClass)
 #     pre.train()
-#     torch.save(pre, 'pre')
+    torch.save(pre, path['workPath'] + '/pre')
 #     pre.test()
+    
+    pre.classifier.load_state_dict(torch.load(path['workPath'] + '/pretrainState'))
     state = pre.getState()
     
-    c = input('Complete pretrain, press y to continue')
-    if c != 'y':
-        return 0
+#     c = input('Complete pretrain, press y to continue /n')
+#     if c != 'y':
+#         return 0
 
     print('Loading pretrain information...')
     featureNet.load_state_dict(state)
@@ -104,12 +106,16 @@ def main():
     pa = setParam()
     ddml = DDML(pa, featureNet, path['workPath'], loader)
     print('Training...')
-    # ddml.train()
+#     ddml.train()
     torch.save(ddml, path['workPath'] + '/ddml')
     
     ddml = torch.load(path['workPath'] + '/ddml')
-    print('Testing...')
-    result = ddml.test()
+    
+    for i in range(10):
+        ddml.featureNet.load_state_dict(torch.load(path['workPath'] + '/featureNetState{}'.format(i)))
+        print('Testing...')
+        result = ddml.test()
+        torch.save(result, path['workPath'] + '/result{}'.format(i))
 
 if __name__ == '__main__':
     main()
