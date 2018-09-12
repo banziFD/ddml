@@ -74,23 +74,22 @@ def prepareData(datasetPath, workPath, vecLabel = False):
     torch.save(data[3], workPath + '/valImage')
 
 class CifarSet(torch.utils.data.Dataset):
-    def __init__(self, workPath, mode = 'train', vecLabel = False):
+    def __init__(self, workPath, mode = 'train', vecLabel = False, nbClass = 10):
         super(CifarSet, self).__init__()
         self.mode = mode
         self.image = torch.load(workPath + '/{}Image'.format(mode))
         self.label = torch.load(workPath + '/{}Label'.format(mode))
         self.vecLabel = vecLabel
-        self.transform = transforms.Compose([transforms.ToPILImage(), 
-                                             transforms.Resize([224, 224]), 
-                                             transforms.ToTensor(), 
-                                             transforms.Normalize(mean = [0.485, 0.456, 0.406], std = [0.229, 0.224, 0.225])])
-
+        self.transform = transforms.Compose(
+            [transforms.Resize([224, 224]),
+            transforms.ToTensor(),
+            transforms.Normalize(mean = [0.485, 0.456, 0.406], std = [0.229, 0.224, 0.225])])
     def __getitem__(self, index):
         x = self.image[index]
         x = self.transform(x)
         y = self.label[index]
         if(self.vecLabel):
-            t = torch.zeros(10)
+            t = torch.zeros(self.nbClass)
             t[y] = 1
             y = t
         return x, y

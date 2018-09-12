@@ -244,6 +244,5 @@ class DDML:
         torch.save(result, workPath + '/result')
         return result
     
-
 if __name__ == "__main__":
     pass
