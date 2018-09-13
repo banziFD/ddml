@@ -48,9 +48,11 @@ def cifar100Data(datasetPath, select = None):
     testFile = cifarUnpickle(testFile)
 
     trainLabel = trainFile[b'fine_labels']
+    trainLabel = torch.tensor(trainLabel)
     trainImage = trainFile[b'data']
 
     testLabel = testFile[b'fine_labels']
+    testLabel = torch.tensor(testLabel)
     testImage = testFile[b'data']
 
     trainImage = torch.from_numpy(trainImage)
@@ -62,9 +64,18 @@ def cifar100Data(datasetPath, select = None):
 
     return trainLabel, trainImage, testLabel, testImage
 
-def prepareData(datasetPath, workPath, vecLabel = False):
+def prepareData10(datasetPath, workPath, vecLabel = False):
     data = cifar10Data(datasetPath, vecLabel)
-    # data = cifar100Data(datasetPath, vecLabel)
+    
+    torch.save(data[0],workPath + '/trainLabel')
+    torch.save(data[1], workPath + '/trainImage')
+    torch.save(data[2], workPath + '/testLabel')
+    torch.save(data[3], workPath + '/testImage')
+    torch.save(data[2], workPath + '/valLabel')
+    torch.save(data[3], workPath + '/valImage')
+
+def prepareData100(datasetPath, workPath, vecLabel = False):
+    data = cifar100Data(datasetPath, vecLabel)
     
     torch.save(data[0],workPath + '/trainLabel')
     torch.save(data[1], workPath + '/trainImage')
@@ -80,8 +91,10 @@ class CifarSet(torch.utils.data.Dataset):
         self.image = torch.load(workPath + '/{}Image'.format(mode))
         self.label = torch.load(workPath + '/{}Label'.format(mode))
         self.vecLabel = vecLabel
+        self.nbClass = nbClass
         self.transform = transforms.Compose(
-            [transforms.Resize([224, 224]),
+            [transforms.ToPILImage(),
+            transforms.Resize([224, 224]),
             transforms.ToTensor(),
             transforms.Normalize(mean = [0.485, 0.456, 0.406], std = [0.229, 0.224, 0.225])])
     def __getitem__(self, index):
