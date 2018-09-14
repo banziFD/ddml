@@ -23,8 +23,9 @@ def latentFeature(pa, workPath, featureNet, loader:
     for step, (x, label, img) in enumerate(loader):
         if pa['gpu']:
             x = x.cuda()
-        feature = 
-
+        data['image'].append(img)
+        data['label'][step] = label[0]
+        data['feature'][step] = featureNet(x)[0].data()
 
     return data
 
@@ -38,7 +39,7 @@ def setPath():
 
 def setParam():
     param = dict()
-    param['batch'] = 128
+    param['batch'] = 1
     param['gpu'] = True
     return param
 
