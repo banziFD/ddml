@@ -5,7 +5,6 @@ from ddml import DDMLLoss
 from ddml import DDML
 import util.data.cifar as cifar
 from pretrain import Pretrain
-import utils_ddml
 
 def setPath():
     path = dict()
@@ -19,7 +18,7 @@ def setParamPre():
     p = dict()
     p['lr'] = 0.0001
     p['batch'] = 128
-    p['epoch'] = 10
+    p['epoch'] = 8
     p['gpu'] = True
     p['freq'] = 3
     p['nbClass'] = 10
@@ -29,7 +28,7 @@ def setParam():
     param = dict()
     param['lr'] = 0.00005
     param['batch'] = 128
-    param['epoch'] = 10
+    param['epoch'] = 12
     param['gpu'] = True
     param['tau'] = 1.5
     param['beta'] = 1
@@ -87,9 +86,9 @@ def main():
     pa = setParamPre()
     featureNet = ResFeature()
     pre = Pretrain(pa, featureNet, path['workPath'], loader, nbClass)
-#     pre.train()
+    pre.train()
     pre.classifier.load_state_dict(torch.load(path['workPath'] + '/pretrainState'))
-#     pre.test()
+    pre.test()
     
     pre.classifier.load_state_dict(torch.load(path['workPath'] + '/pretrainState'))
     state = pre.getState()
@@ -103,13 +102,14 @@ def main():
 
     print('Loading data...')
     loader = loaderList()
-
     pa = setParam()
+    
     ddml = DDML(pa, featureNet, path['workPath'], loader)
     print('Training...')
-#     ddml.train()
+    ddml.train()
+    torch.save(ddml, path['workPath'] + '/ddml')
     
-    ddml.featureNet.load_state_dict(torch.load(path['workPath'] + '/featureNetState{}'.format(3)))
+    ddml = torch.load(path['workPath'] + '/ddml')
     print('Testing...')
     result = ddml.test()
     torch.save(result, path['workPath'] + '/result')
