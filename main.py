@@ -4,30 +4,29 @@ from ddml import ResFeature
 from ddml import DDMLLoss
 from ddml import DDML
 import util.data.cifar as cifar
+import util.data.caltech as caltech
 from pretrain import Pretrain
 
 def setPath():
     path = dict()
-    path['datasetPath'] = '/home/spyisflying/dataset/cifar/cifar-100-python'
+    path['datasetPath'] = '/home/spyisflying/dataset/caltech7'
     path['workPath'] = '/home/spyisflying/git/ddml/ex'
-#     path['datasetPath'] = 'd:/dataset/cifar-10-python'
-#     path['workPath'] = 'd:/git/ddml/ex'
     return path
 
 def setParamPre():
     p = dict()
     p['lr'] = 0.00001
-    p['batch'] = 128
-    p['epoch'] = 5
+    p['batch'] = 64
+    p['epoch'] = 10
     p['gpu'] = True
     p['freq'] = 3
-    p['nbClass'] = 10
+    p['nbClass'] = 7
     return p
 
 def setParam():
     param = dict()
     param['lr'] = 0.00005
-    param['batch'] = 128
+    param['batch'] = 64
     param['epoch'] = 8
     param['gpu'] = True
     param['tau'] = 1.5
@@ -42,9 +41,9 @@ def loaderListPre():
     pa = setParamPre()
     workPath = path['workPath']
 
-    trainData = cifar.CifarSet(workPath, 'train', vecLabel = True, nbClass = 100)
-    valData = cifar.CifarSet(workPath, 'val', vecLabel = True, nbClass = 100)
-    testData = cifar.CifarSet(workPath, 'test', vecLabel = True, nbClass = 100)
+    trainData = caltech.CaltechSet(workPath, 'train', vecLabel = True, nbClass = pa['nbClass'])
+    valData = caltech.CaltechSet(workPath, 'val', vecLabel = True, nbClass = pa['nbClass'])
+    testData = caltech.CaltechSet(workPath, 'test', vecLabel = True, nbClass = pa['nbClass'])
     
     trainLoader = DataLoader(trainData, batch_size = pa['batch'], shuffle = True, drop_last = True, num_workers = 2)
     valLoader = DataLoader(valData, batch_size = pa['batch'], shuffle = True, drop_last = True, num_workers = 2)
@@ -57,10 +56,10 @@ def loaderList():
     path = setPath()
     pa = setParam()
     
-    trainData1 = cifar.CifarSet(path['workPath'], 'train', vecLabel = False)
-    trainData2 = cifar.CifarSet(path['workPath'], 'train', vecLabel = False)
-    valData = cifar.CifarSet(path['workPath'], 'val', vecLabel = False)
-    testData = cifar.CifarSet(path['workPath'], 'test', vecLabel = False)
+    trainData1 = caltech.CaltechSet(path['workPath'], 'train', vecLabel = False)
+    trainData2 = caltech.CaltechSet(path['workPath'], 'train', vecLabel = False)
+    valData = caltech.CaltechSet(path['workPath'], 'val', vecLabel = False)
+    testData = caltech.Caltech(path['workPath'], 'test', vecLabel = False)
 
     trainLoader1 = DataLoader(trainData1, batch_size = pa['batch'], shuffle = True, drop_last = True, num_workers = 2)
     trainLoader2 = DataLoader(trainData2, batch_size = pa['batch'], shuffle = True, drop_last = True, num_workers = 2)
@@ -76,25 +75,25 @@ def main():
     path = setPath()
 
     print('Preparing data...')
-    cifar.prepareData100(path['datasetPath'], path['workPath'])
-    nbClass = 100
+    caltech.prepareData(path['datasetPath'], path['workPath'])
     
     print('Loading pretrain data')
     loader = loaderListPre()
 
     print('Initializing model and pretrain...')
     pa = setParamPre()
+    nbClass = pa['nbClass']
     featureNet = ResFeature()
     pre = Pretrain(pa, featureNet, path['workPath'], loader, nbClass)
     
     pre.train()
     pre.classifier.load_state_dict(torch.load(path['workPath'] + '/pretrainState'))
     pre.test()
-    torch.save(pre, 'pretrain')
+    torch.save(pre, path['workPath'] + '/pretrain')
     
-#     c = input('Complete pretrain, press y to continue /n')
-#     if c != 'y':
-#         return 0
+    c = input('Complete pretrain, press y to continue /n')
+    if c != 'y':
+        return 0
 
     print('Loading pretrain information...')
     state = pre.getState()
