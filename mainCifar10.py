@@ -28,13 +28,13 @@ def setParam():
     param = dict()
     param['lr'] = 0.00005
     param['batch'] = 128
-    param['epoch'] = 12
+    param['epoch'] = 15
     param['gpu'] = True
     param['tau'] = 1.5
     param['beta'] = 1
     param['lambda'] = 0.2
     param['freq'] = 3
-    param['milestones'] = [30, 60, 90, 120, 150, 180, 210]
+    param['milestones'] = list()
     return param
 
 def loaderListPre():
@@ -88,18 +88,17 @@ def main():
     pre = Pretrain(pa, featureNet, path['workPath'], loader, nbClass)
     pre.train()
     pre.classifier.load_state_dict(torch.load(path['workPath'] + '/pretrainState'))
-    pre.test()
+    pre.tests()
     
-    pre.classifier.load_state_dict(torch.load(path['workPath'] + '/pretrainState'))
-    state = pre.getState()
     
 #     c = input('Complete pretrain, press y to continue /n')
 #     if c != 'y':
 #         return 0
 
+    state = pre.getState()
     print('Loading pretrain information...')
     featureNet.load_state_dict(state)
-
+    
     print('Loading data...')
     loader = loaderList()
     pa = setParam()

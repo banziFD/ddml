@@ -2,6 +2,7 @@ import time
 import numpy as np
 import torch
 import torch.nn as nn
+from torch.optim.lr_scheduler import MultiStepLR as MultiStepLR
 import torchvision.transforms as transforms
 import torchvision.models as models
 from torch.utils.data import DataLoader
@@ -62,8 +63,12 @@ class DDML:
         curveX = torch.zeros(pa['epoch'] * 2, 2)
         curveY = torch.zeros(pa['epoch'] * 2)
         curve = 0
-        
+        if len(pa['milestones']) != 0:
+            scheduler = MultiStepLR(optim, pa['milestones'], gamma = 0.1)
+           
         for e in range(pa['epoch']):
+            if scheduler:
+                scheduler.step()
             start = time.time()
             trainError = 0
             valError = 0
