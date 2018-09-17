@@ -58,7 +58,7 @@ class CaltechSet(torch.utils.data.Dataset):
     def __init__(self, workPath, mode = 'train', vecLabel = False, nbClass = 7):
         super(CaltechSet, self).__init__()
         self.mode = mode
-        self.image = torch.load(workPath + '/{}Image'.format(mode))
+        self.image = workPath + '/caltech7/'
         self.label = torch.load(workPath + '/{}Label'.format(mode))
         self.vecLabel = vecLabel
         self.nbClass = nbClass
@@ -68,7 +68,8 @@ class CaltechSet(torch.utils.data.Dataset):
             transforms.Normalize(mean = [0.485, 0.456, 0.406], std = [0.229, 0.224, 0.225])])
         
     def __getitem__(self, index):
-        x = self.image[index]
+        x = self.image + '{}.jpg'.format(index)
+        x = Image.open(x)
         x = self.transform(x)
         y = self.label[index]
         if(self.vecLabel):
@@ -78,7 +79,6 @@ class CaltechSet(torch.utils.data.Dataset):
         return x, y
 
     def __len__(self):
-        assert self.label.shape[0] == len(self.image)
         return self.label.shape[0]
 
 if __name__ == '__main__':
