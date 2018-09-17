@@ -44,7 +44,7 @@ def prepareData(datasetPath, workPath):
     label = torch.load(datasetPath + '/label')
     image = list()
     for img in range(label.shape[0]):
-        Image.open(datasetPath + '/{}.jpg'.format(img)):
+        img = Image.open(datasetPath + '/{}.jpg'.format(img))
         image.append(img)
     
     torch.save(label,workPath + '/trainLabel')

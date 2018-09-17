@@ -50,8 +50,8 @@ def loaderList():
     trainData = cifar.CifarSet(path['workPath'], 'train', vecLabel = False)
     testData = cifar.CifarSet(path['workPath'], 'test', vecLabel = False)
 
-    trainLoader = DataLoader(trainData1, batch_size = pa['batch'], shuffle = True, drop_last = True, num_workers = 2)
-    testLoader = DataLoader(testData, batch_size = pa['batch'], shuffle = True, drop_last = True, num_workers = 2)
+    trainLoader = DataLoader(trainData1, batch_size = 1, shuffle = False, drop_last = False, num_workers = 2)
+    testLoader = DataLoader(testData, batch_size = 1, shuffle = False, drop_last = False, num_workers = 2)
 
     loaderList = [trainLoader, testLoader]
     return loaderList
