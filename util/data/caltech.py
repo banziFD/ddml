@@ -44,7 +44,7 @@ def caltechData(datasetPath, outputPath):
     
 def prepareData(datasetPath, workPath):
     label = torch.load(datasetPath + '/label')
-    test = np.random.choice(label.shape[0], (label.shape[0] // 10,))
+    test = np.random.choice(label.shape[0], (label.shape[0] // 10,) replace = False)
     test = test.tolist()
     train = list()
     for i in range(label.shape[0]):
