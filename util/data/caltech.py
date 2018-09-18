@@ -50,7 +50,7 @@ def prepareData(datasetPath, workPath):
     for i in range(label.shape[0]):
         if i not in test:
             train.append(i)
-    random.shaffle(train)
+    random.shuffle(train)
     json.dump(train, open(workPath + '/train.json', 'w'))
     json.dump(test, open(workPath + '/test.json', 'w'))
     json.dump(test, open(workPath + '/val.json', 'w'))
@@ -60,17 +60,18 @@ class CaltechSet(torch.utils.data.Dataset):
         super(CaltechSet, self).__init__()
         self.mode = mode
         self.image = workPath + '/caltech7/'
-        self.label = torch.load(workPath + '/{}Label'.format(mode))
-        self.key = json.load(open(workPath + '/{}.json'.format(mode)))
+        self.label = torch.load(workPath + '/caltech7/label')
+        self.key = json.load(open(workPath + '/caltech7/{}.json'.format(mode)))
         self.vecLabel = vecLabel
         self.nbClass = nbClass
         self.transform = transforms.Compose(
-            [transforms.Resize([224, 224]),
+            [transforms.Grayscale(3),
+            transforms.Resize([224, 224]),
             transforms.ToTensor(),
             transforms.Normalize(mean = [0.485, 0.456, 0.406], std = [0.229, 0.224, 0.225])])
         
     def __getitem__(self, index):
-        k = self.key(index)
+        k = self.key[index]
         x = self.image + '{}.jpg'.format(k)
         x = Image.open(x)
         x = self.transform(x)

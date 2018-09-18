@@ -65,6 +65,8 @@ class DDML:
         curve = 0
         if len(pa['milestones']) != 0:
             scheduler = MultiStepLR(optim, pa['milestones'], gamma = 0.1)
+        else:
+            scheduler = None
            
         for e in range(pa['epoch']):
             if scheduler:
@@ -139,10 +141,11 @@ class DDML:
                         vis.scatter(slideCurveX[0:freqStep], torch.ones(freqStep), win = 'win0')
             
             trainError = trainError / step
-            curveX[curve, 0] = e
-            curveX[curve, 1] = trainError
-            curveY[curve] = 1
-            curve += 1
+            if(trainError <= 10000000000):
+                curveX[curve, 0] = e
+                curveX[curve, 1] = trainError
+                curveY[curve] = 1
+                curve += 1
 
             ddml.eval()
             it = valLoader1.__iter__()
@@ -171,7 +174,8 @@ class DDML:
             curveY[curve] = 2
             curve += 1
             
-            vis.scatter(curveX[0:curve], curveY[0:curve], win = 'win1')
+            if curve > 1:
+                vis.scatter(curveX[0:curve], curveY[0:curve], win = 'win1')
             print(e, time.time() - start, trainError, valError)
             torch.save(ddml.state_dict(), workPath + '/featureNetState{}'.format(e))
         return ddml
@@ -187,7 +191,6 @@ class DDML:
         it1 = loader1.__iter__()
         it2 = loader2.__iter__()
         for step in range(loader1.__len__()):
-            print(step)
             (x1, label1) = it1.__next__()
             (x2, label2) = it2.__next__()
             sim = label1 == label2
