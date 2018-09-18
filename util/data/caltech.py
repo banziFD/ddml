@@ -1,5 +1,7 @@
 import pickle
 import numpy as np 
+import json
+import random
 from glob import glob
 from PIL import Image  
 from scipy.io import loadmat
@@ -42,17 +44,16 @@ def caltechData(datasetPath, outputPath):
     
 def prepareData(datasetPath, workPath):
     label = torch.load(datasetPath + '/label')
-    image = list()
-    for img in range(label.shape[0]):
-        img = Image.open(datasetPath + '/{}.jpg'.format(img))
-        image.append(img)
-    
-    torch.save(label,workPath + '/trainLabel')
-    torch.save(image, workPath + '/trainImage')
-    torch.save(label, workPath + '/testLabel')
-    torch.save(image, workPath + '/testImage')
-    torch.save(label, workPath + '/valLabel')
-    torch.save(image, workPath + '/valImage')
+    test = np.random.choice(label.shape[0], (label.shape[0] // 10,))
+    test = test.tolist()
+    train = list()
+    for i in range(label.shape[0]):
+        if i not in test:
+            train.append(i)
+    random.shaffle(train)
+    json.dump(train, open(workPath + '/train.json', 'w'))
+    json.dump(test, open(workPath + '/test.json', 'w'))
+    json.dump(test, open(workPath + '/val.json', 'w'))
 
 class CaltechSet(torch.utils.data.Dataset):
     def __init__(self, workPath, mode = 'train', vecLabel = False, nbClass = 7):
@@ -60,6 +61,7 @@ class CaltechSet(torch.utils.data.Dataset):
         self.mode = mode
         self.image = workPath + '/caltech7/'
         self.label = torch.load(workPath + '/{}Label'.format(mode))
+        self.key = json.load(open(workPath + '/{}.json'.format(mode)))
         self.vecLabel = vecLabel
         self.nbClass = nbClass
         self.transform = transforms.Compose(
@@ -68,10 +70,11 @@ class CaltechSet(torch.utils.data.Dataset):
             transforms.Normalize(mean = [0.485, 0.456, 0.406], std = [0.229, 0.224, 0.225])])
         
     def __getitem__(self, index):
-        x = self.image + '{}.jpg'.format(index)
+        k = self.key(index)
+        x = self.image + '{}.jpg'.format(k)
         x = Image.open(x)
         x = self.transform(x)
-        y = self.label[index]
+        y = self.label[k]
         if(self.vecLabel):
             t = torch.zeros(self.nbClass)
             t[y] = 1
@@ -79,7 +82,7 @@ class CaltechSet(torch.utils.data.Dataset):
         return x, y
 
     def __len__(self):
-        return self.label.shape[0]
+        return len(self.key)
 
 if __name__ == '__main__':
     pass
