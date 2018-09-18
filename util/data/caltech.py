@@ -44,7 +44,7 @@ def caltechData(datasetPath, outputPath):
     
 def prepareData(datasetPath, workPath):
     label = torch.load(datasetPath + '/label')
-    test = np.random.choice(label.shape[0], (label.shape[0] // 10,) replace = False)
+    test = np.random.choice(label.shape[0], (label.shape[0] // 10,), replace = False)
     test = test.tolist()
     train = list()
     for i in range(label.shape[0]):
@@ -56,12 +56,12 @@ def prepareData(datasetPath, workPath):
     json.dump(test, open(workPath + '/val.json', 'w'))
 
 class CaltechSet(torch.utils.data.Dataset):
-    def __init__(self, workPath, mode = 'train', vecLabel = False, nbClass = 7):
+    def __init__(self, workPath, mode = 'train', vecLabel = False, nbClass = None):
         super(CaltechSet, self).__init__()
         self.mode = mode
-        self.image = workPath + '/caltech7/'
-        self.label = torch.load(workPath + '/caltech7/label')
-        self.key = json.load(open(workPath + '/caltech7/{}.json'.format(mode)))
+        self.image = workPath + '/caltech{}/'.format(nbClass)
+        self.label = torch.load(workPath + '/caltech{}/label'.format(nbClass))
+        self.key = json.load(open(workPath + '/caltech{}/{}.json'.format(nbClass, mode)))
         self.vecLabel = vecLabel
         self.nbClass = nbClass
         self.transform = transforms.Compose(
