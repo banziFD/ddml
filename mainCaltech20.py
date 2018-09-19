@@ -103,13 +103,11 @@ def main():
     pa = setParam()
     ddml = DDML(pa, featureNet, path['workPath'], loader)
     print('Training...')
-    ddml.train()
-#     ddml.featureNet.load_state_dict(torch.load(path['workPath'] + '/featureNetState'))
+#     ddml.train()
+    ddml.featureNet.load_state_dict(torch.load(path['workPath'] + '/featureNetState'))
     print('Testing...')
-    for i in range(pa['epoch']):
-        ddml.featureNet.load_state_dict(torch.load(path['workPath'] + '/featureNetState{}'.format(i)))
-        result = ddml.test()
-        torch.save(result, path['workPath'] + '/result{}'.format(i))
+    result = ddml.test()
+    torch.save(result, path['workPath'] + '/result')
     torch.save(ddml, path['workPath'] + '/ddml')
 
 if __name__ == '__main__':
