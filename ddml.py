@@ -82,8 +82,8 @@ class DDML:
 
             ddml.train()
             it = trainLoader2.__iter__()
-            for step, (x1, label1) in enumerate(trainLoader1):
-                (x2, label2) = it.__next__()
+            for step, (x1, label1, k1) in enumerate(trainLoader1):
+                (x2, label2, k2) = it.__next__()
                 sim = (label1 == label2)
                 # if(step == 0):
                 #     inter_feature = []
@@ -149,8 +149,8 @@ class DDML:
 
             ddml.eval()
             it = valLoader1.__iter__()
-            for step, (x1, label1) in enumerate(valLoader1):
-                (x2, label2) = it.__next__()
+            for step, (x1, label1, k1) in enumerate(valLoader1):
+                (x2, label2, k2) = it.__next__()
                 sim = (label1 == label2)
                 x1.requires_grad = False;
                 x2.requires_grad = False;
@@ -191,8 +191,8 @@ class DDML:
         it1 = loader1.__iter__()
         it2 = loader2.__iter__()
         for step in range(loader1.__len__()):
-            (x1, label1) = it1.__next__()
-            (x2, label2) = it2.__next__()
+            (x1, label1, k1) = it1.__next__()
+            (x2, label2, k2) = it2.__next__()
             sim = label1 == label2
             sim = sim.float()
             sim = sim * 2 - 1

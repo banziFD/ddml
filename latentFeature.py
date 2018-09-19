@@ -1,64 +1,42 @@
-import pickle
 import torch
 from torch.utils.data import DataLoader
 from ddml import ResFeature
 from ddml import DDMLLoss
 from ddml import DDML
 import util.data.cifar as cifar
-from pretrain import Pretrain  
+import util.data.caltech as caltech
+import util.data.msrcv as msrcv
+import json
 
-def latentFeature(pa, workPath, featureNet, loader:
-    data = dict()
+def latentFeature(featureNet, loader):
     size = loader.dataset.__len__()
-    data['image'] = list()
-    data['label'] = torch.zeros(size, dtype = torch.uint8)
-    data['feature'] = torch.zeros(size, 512)
+
+    label = torch.zeros(size, dtype = torch.uint8)
+    feature = torch.zeros(size, 512)
+    key = torch.zeros(size, dtype = torch.long)
 
     featureNet.eval()
-    if pa['gpu']:
-        featureNet = featureNet.cuda()
+    featureNet = featureNet.cuda()
 
-    size = loader.dataset().shape[0]
-    feature = torch.zeros(size, 512)
-    for step, (x, label, img) in enumerate(loader):
+    for step, (x, l, k) in enumerate(loader):
         if pa['gpu']:
             x = x.cuda()
-        data['image'].append(img)
-        data['label'][step] = label[0]
-        data['feature'][step] = featureNet(x)[0].data()
-
-    return data
-
-def setPath():
-    path = dict()
-    path['datasetPath'] = '/home/spyisflying/dataset/cifar/cifar-10-python'
-    path['workPath'] = '/home/spyisflying/git/ddml/ex'
-#     path['datasetPath'] = 'd:/dataset/cifar-10-python'
-#     path['workPath'] = 'd:/git/ddml/ex'
-    return path
-
-def setParam():
-    param = dict()
-    param['batch'] = 1
-    param['gpu'] = True
-    return param
-
-def loaderList():
-    path = setPath()
-    pa = setParam()
+        label[step] = l[0]
+        feature[step] = featureNet(x)[0].data()
+        key[step] = k
     
-    trainData = cifar.CifarSet(path['workPath'], 'train', vecLabel = False)
-    testData = cifar.CifarSet(path['workPath'], 'test', vecLabel = False)
+    label = label.numpy()
+    feature = feature.numpy()
+    key = key.numpy()
+    return label, feature, key
 
-    trainLoader = DataLoader(trainData1, batch_size = 1, shuffle = False, drop_last = False, num_workers = 2)
-    testLoader = DataLoader(testData, batch_size = 1, shuffle = False, drop_last = False, num_workers = 2)
-
-    loaderList = [trainLoader, testLoader]
-    return loaderList
+def getLoader(workPath):
+    data = cifar.CifarSet(workPath, 'train', vecLabel = False)
+    loader = DataLoader(trainData, batch_size = 1, shuffle = False, drop_last = False, num_workers = 2)
+    return loader
 
 if __name__ == '__main__':
-    pa = setParam()
-    path = setPath()
+    workPath = '/home/spyisflying/git/ddml/ex'
 
     print('Pretraing data...')
     cifar.prepareData10(path['datasetPath'], path['workPath'])
@@ -66,8 +44,12 @@ if __name__ == '__main__':
     featureNet = ResFeature()
     featureNet.load_state_dict(torch.load(path['workPath'] + '/featureNetState'))
 
-    dataTrain = latentFeature(pa, path['workPath'], featureNet, loaderList[0])
-    dataTest = latentFeature(pa, path['workPath'], featureNet, loaderList[1])
+    loader = getLoader()
 
-    pickle.dump(dataTrain, open('cifar10Train', 'w'))
-    pickle.dump(dataTest, oepn('cifar10Test', 'w'))
+    print('Extracting features...')
+    label, feature, key = latentFeature(featureNet, loader)
+
+    print('Saving data as numpy array')
+    np.save(label, 'label')
+    np.save(feature, 'feature')
+    np.save(key, 'key')

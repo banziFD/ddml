@@ -105,7 +105,7 @@ class CifarSet(torch.utils.data.Dataset):
             t = torch.zeros(self.nbClass)
             t[y] = 1
             y = t
-        return x, y
+        return x, y, index
     
     def __len__(self):
         assert self.label.shape[0] == self.image.shape[0]

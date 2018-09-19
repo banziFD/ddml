@@ -56,7 +56,7 @@ class Pretrain:
             slideCurveY = torch.zeros(len(trainLoader))
 
             model.train()
-            for step, (x, y) in enumerate(trainLoader):
+            for step, (x, y, k) in enumerate(trainLoader):
                 # if step == 0:
                 #     interFeature = []
                 #     handle1 = model.conv1.register_forward_hook(make_hook('f', interFeature))
@@ -94,7 +94,7 @@ class Pretrain:
             curve += 1
 
             model.eval()
-            for step, (x, y) in enumerate(valLoader):
+            for step, (x, y, k) in enumerate(valLoader):
                 if(pa['gpu']):
                     x = x.cuda()
                     y = y.cuda()
@@ -148,7 +148,7 @@ class Pretrain:
             classifier = classifier.cuda()
         
         classifier = classifier.eval()
-        for step, (x, y) in enumerate(testLoader):
+        for step, (x, y, k) in enumerate(testLoader):
             if pa['gpu']:
                 x = x.cuda()
                 y = y.cuda()

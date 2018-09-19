@@ -55,7 +55,7 @@ class MsrcvSet(torch.utils.data.Dataset):
             t = torch.zeros(self.nbClass)
             t[y] = 1
             y = t
-        return x, y
+        return x, y, k
 
     def __len__(self):
         return len(self.key)
