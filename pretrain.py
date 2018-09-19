@@ -65,7 +65,7 @@ class Pretrain:
                 if pa['gpu']:
                     x = x.cuda()
                     y = y.cuda()
-                
+                    
                 pred = model(x)
                 loss = lossFun(pred, y)
                 optim.zero_grad()
@@ -87,7 +87,7 @@ class Pretrain:
                     if freqStep > 1:
                         vis.scatter(slideCurveX[0:freqStep], torch.ones(freqStep), win = 'win0')
                         
-            trainError = trainError / step
+            trainError = trainError / (step + 1)
             curveX[curve, 0] = e
             curveX[curve, 1] = trainError
             curveY[curve] = 1
@@ -104,7 +104,7 @@ class Pretrain:
                 loss = lossFun(pred, y)
                 valError += loss.data.item()
             
-            valError = valError / step
+            valError = valError / (step + 1)
             curveX[curve, 0] = e
             curveX[curve, 1] = valError
             curveY[curve] = 2

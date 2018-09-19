@@ -39,11 +39,12 @@ class MsrcvSet(torch.utils.data.Dataset):
     def __init__(self, workPath, mode = 'train', vecLabel = False, nbClass = 7):
         super(MsrcvSet, self).__init__()
         self.mode = mode
-        self.image = workPath + '/msrcv'
-        self.label = json.load(workPath + '/mscrv7/label')
-        self.key = json.load(workPath + '/{}'.format(self.mode))
-        self.transform = transforms.Compose([transforms.resize(), transforms.ToTensor(), transforms.Normalize(mean = [0.485, 0.456, 0.406], std = [0.229, 0.224, 0.225])])
+        self.image = workPath + '/msrcv7'
+        self.label = json.load(open(workPath + '/msrcv7/label.json'))
+        self.key = json.load(open(workPath + '/msrcv7/{}.json'.format(self.mode)))
+        self.transform = transforms.Compose([transforms.Resize([224, 224]), transforms.ToTensor(), transforms.Normalize(mean = [0.485, 0.456, 0.406], std = [0.229, 0.224, 0.225])])
         self.vecLabel = vecLabel
+        self.nbClass = nbClass
 
     def __getitem__(self, index):
         k = self.key[index]
@@ -51,14 +52,13 @@ class MsrcvSet(torch.utils.data.Dataset):
         x = self.transform(x)
         y = self.label[k]
         if(self.vecLabel):
-            t = torch.zeros(10)
+            t = torch.zeros(self.nbClass)
             t[y] = 1
             y = t
         return x, y
 
     def __len__(self):
-        assert self.label.shape[0] == self.image.shape[0]
-        return self.label.shape[0]
+        return len(self.key)
 
 if __name__ == '__main__':
     pass
