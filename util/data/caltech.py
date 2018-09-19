@@ -56,12 +56,12 @@ def prepareData(datasetPath, workPath):
     json.dump(test, open(workPath + '/val.json', 'w'))
 
 class CaltechSet(torch.utils.data.Dataset):
-    def __init__(self, workPath, mode = 'train', vecLabel = False, nbClass = None):
+    def __init__(self, workPath, mode = 'train', vecLabel = False):
         super(CaltechSet, self).__init__()
         self.mode = mode
-        self.image = workPath + '/caltech{}/'.format(nbClass)
-        self.label = torch.load(workPath + '/caltech{}/label'.format(nbClass))
-        self.key = json.load(open(workPath + '/caltech{}/{}.json'.format(nbClass, mode)))
+        self.image = workPath
+        self.label = torch.load(workPath + '/label')
+        self.key = json.load(open(workPath + '/{}.json'.format(mode)))
         self.vecLabel = vecLabel
         self.nbClass = nbClass
         self.transform = transforms.Compose(
