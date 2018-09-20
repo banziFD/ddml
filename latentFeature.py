@@ -6,7 +6,7 @@ from ddml import DDML
 import util.data.cifar as cifar
 import util.data.caltech as caltech
 import util.data.msrcv as msrcv
-import json
+import numpy as np
 
 def latentFeature(featureNet, loader):
     size = loader.dataset.__len__()
@@ -19,10 +19,11 @@ def latentFeature(featureNet, loader):
     featureNet = featureNet.cuda()
 
     for step, (x, l, k) in enumerate(loader):
-        if pa['gpu']:
-            x = x.cuda()
+        x = x.cuda()
         label[step] = l[0]
-        feature[step] = featureNet(x)[0].data()
+        current = featureNet(x)
+        current = current.data
+        feature[step] = current
         key[step] = k
     
     label = label.numpy()
@@ -31,25 +32,27 @@ def latentFeature(featureNet, loader):
     return label, feature, key
 
 def getLoader(workPath):
-    data = cifar.CifarSet(workPath, 'train', vecLabel = False)
-    loader = DataLoader(trainData, batch_size = 1, shuffle = False, drop_last = False, num_workers = 2)
+    data = cifar.CifarSet(workPath, 'train', vecLabel = False, nbClass = 10)
+    loader = DataLoader(data, batch_size = 1, shuffle = False, drop_last = False, num_workers = 2)
     return loader
 
 if __name__ == '__main__':
     workPath = '/home/spyisflying/git/ddml/ex'
 
-    print('Pretraing data...')
-    cifar.prepareData10(path['datasetPath'], path['workPath'])
+    print('Preparing data...')
+    cifar.prepareData10('/home/spyisflying/dataset/cifar/cifar-10-python', workPath)
 
     featureNet = ResFeature()
-    featureNet.load_state_dict(torch.load(path['workPath'] + '/featureNetState'))
+    featureNet.load_state_dict(torch.load(workPath + '/featureNetState'))
 
-    loader = getLoader()
+    loader = getLoader(workPath)
 
     print('Extracting features...')
     label, feature, key = latentFeature(featureNet, loader)
 
     print('Saving data as numpy array')
-    np.save(label, 'label')
-    np.save(feature, 'feature')
-    np.save(key, 'key')
+    
+    mode = 'train'
+    np.save(mode + 'label', label)
+    np.save(mode + 'feature', feature)
+    np.save(mode + 'key', key)
