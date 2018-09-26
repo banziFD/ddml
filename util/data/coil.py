@@ -11,7 +11,7 @@ def coilData(datasetPath, workPath, nbClass):
     label = list()
     l = 0
     idx = 0
-    if not os.isdir(workPath + '/image'):
+    if not os.path.isdir(workPath + '/image'):
         os.mkdir(workPath + '/image')
     
     for c in range(1, nbClass + 1):
@@ -23,16 +23,16 @@ def coilData(datasetPath, workPath, nbClass):
             idx += 1
         l += 1
 
-    test = np.choice(len(label), len(label) // 10, replace = False).tolist()
+    test = np.random.choice(len(label), len(label) // 10, replace = False).tolist()
     train = list()
     for i in range(len(label)):
         if i not in test:
             train.append(i)
     random.shuffle(train)
-    json.dump(train, open(workPath + 'train.json', 'w'))
-    json.dump(test, open(workPath + 'test.json', 'w'))
-    json.dump(val, open(workPath + 'val.json', 'w')) 
-    json.dump(label, open(workPath + 'label.json', 'w'))
+    json.dump(train, open(workPath + '/train.json', 'w'))
+    json.dump(test, open(workPath + '/test.json', 'w'))
+    json.dump(test, open(workPath + '/val.json', 'w')) 
+    json.dump(label, open(workPath + '/label.json', 'w'))
 
 def prepareData20(datasetPath, workPath):
     coilData(datasetPath, workPath, 20)
@@ -69,6 +69,6 @@ class CoilSet(torch.utils.data.Dataset):
         return len(self.key)
 
 if __name__ == '__main__':
-    datasetPath = 'D:/dataset/orl_faces'
-    workPath = 'D:/dataset/orl_faces'
-    prepareData(datasetPath, workPath)
+    datasetPath = 'D:/dataset/coil-100'
+    workPath = 'D:/dataset/coil-100'
+    prepareData100(datasetPath, workPath)
