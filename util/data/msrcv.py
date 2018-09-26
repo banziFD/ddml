@@ -8,7 +8,7 @@ import json
 import random
 
 def msrcvData(datasetPath, select):
-    folders =['airplane', 'bicycle', 'building', 'car', 'cow', 'face', 'tree']
+    folders = select
     l = 0
     meta = dict()
     label = list()
