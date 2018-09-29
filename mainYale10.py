@@ -18,22 +18,22 @@ def setPath():
 def setParamPre():
     p = dict()
     p['lr'] = 0.0001
-    p['batch'] = 64
-    p['epoch'] = 10
+    p['batch'] = 16
+    p['epoch'] = 4
     p['gpu'] = True
-    p['freq'] = 3
-    p['nbClass'] = 30
+    p['freq'] = 1
+    p['nbClass'] = 10
     return p
 
 def setParam():
     param = dict()
     param['lr'] = 0.00005
     param['batch'] = 128
-    param['epoch'] = 70
+    param['epoch'] = 100
     param['gpu'] = True
     param['tau'] = 1.5
     param['beta'] = 1
-    param['freq'] = 1
+    param['freq'] = 3
     param['milestones'] = list()
     return param
 
@@ -66,8 +66,8 @@ def loaderList():
 
     trainLoader1 = DataLoader(trainData1, batch_size = pa['batch'], shuffle = True, drop_last = True, num_workers = 2)
     trainLoader2 = DataLoader(trainData2, batch_size = pa['batch'], shuffle = True, drop_last = True, num_workers = 2)
-    valLoader1 = DataLoader(valData1, batch_size = 64, shuffle = True, drop_last = True, num_workers = 2)
-    valLoader2 = DataLoader(valData2, batch_size = 64, shuffle = True, drop_last = True, num_workers = 2)
+    valLoader1 = DataLoader(valData1, batch_size = 1, shuffle = True, drop_last = True, num_workers = 2)
+    valLoader2 = DataLoader(valData2, batch_size = 1, shuffle = True, drop_last = True, num_workers = 2)
     testLoader1 = DataLoader(testData1, batch_size = 128, shuffle = False, drop_last = True, num_workers = 2)
     testLoader2 = DataLoader(testData2, batch_size = 128, shuffle = False, drop_last = True, num_workers = 2)
 
@@ -88,14 +88,14 @@ def main():
     featureNet = ResFeature()
     pre = Pretrain(pa, featureNet, path['workPath'], loader, nbClass)
     
-#     pre.train()
+    pre.train()
     pre.classifier.load_state_dict(torch.load(path['workPath'] + '/pretrainState'))
     pre.test()
     torch.save(pre, path['workPath'] + '/pretrain')
     
-#     c = input('Complete pretrain, press y to continue /n')
-#     if c != 'y':
-#         return 0
+    c = input('Complete pretrain, press y to continue /n')
+    if c != 'y':
+        return 0
 
     print('Loading pretrain information...')
     state = pre.getState()
@@ -107,7 +107,7 @@ def main():
     pa = setParam()
     ddml = DDML(pa, featureNet, path['workPath'], loader)
     print('Training...')
-#     ddml.train()
+    ddml.train()
     ddml.featureNet.load_state_dict(torch.load(path['workPath'] + '/featureNetState'))
     print('Testing...')
     result = ddml.test()

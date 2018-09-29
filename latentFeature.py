@@ -32,7 +32,7 @@ def latentFeature(featureNet, loader):
     return label, feature, key
 
 def getLoader(workPath):
-    data = cifar.CifarSet(workPath, 'train', vecLabel = False, nbClass = 10)
+    data = cifar.CifarSet(workPath, 'test', vecLabel = False, nbClass = 10)
     loader = DataLoader(data, batch_size = 1, shuffle = False, drop_last = False, num_workers = 2)
     return loader
 
@@ -40,7 +40,7 @@ if __name__ == '__main__':
     workPath = '/home/spyisflying/git/ddml/ex'
 
     print('Preparing data...')
-    cifar.prepareData10('/home/spyisflying/dataset/cifar/cifar-10-python', workPath)
+#     cifar.prepareData10('/home/spyisflying/dataset/cifar/cifar-10-python', workPath)
 
     featureNet = ResFeature()
     featureNet.load_state_dict(torch.load(workPath + '/featureNetState'))
@@ -52,7 +52,7 @@ if __name__ == '__main__':
 
     print('Saving data as numpy array')
     
-    mode = 'train'
+    mode = 'test'
     np.save(mode + 'label', label)
     np.save(mode + 'feature', feature)
     np.save(mode + 'key', key)
