@@ -6,6 +6,7 @@ from PIL import Image
 import numpy as np 
 import torch
 import torchvision
+import torchvision.transforms as transforms
 
 def orlData(datasetPath, workPath):
     folders = list(range(1, 41))
@@ -56,7 +57,7 @@ class OrlSet(torch.utils.data.Dataset):
         x = self.transform(x)
         y = self.label[k]
         if self.vecLabel:
-            t = torch.zzeros(self.nbClass)
+            t = torch.zeros(self.nbClass)
             t[y] = 1
             y = t
         return x, y, k

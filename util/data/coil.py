@@ -6,6 +6,7 @@ from PIL import Image
 import numpy as np 
 import torch
 import torchvision
+import torchvision.transforms as transforms
 
 def coilData(datasetPath, workPath, nbClass):
     label = list()
@@ -42,7 +43,7 @@ def prepareData100(datasetPath, workPath):
 
 class CoilSet(torch.utils.data.Dataset):
     def __init__(self, workPath, mode = 'train', vecLabel = 'False', nbClass = 40):
-        super(OrlSet, self).__init__()
+        super(CoilSet, self).__init__()
         self.mode = mode
         self.image = workPath + '/image'
         self.label = json.load(open(workPath + '/label.json'))
@@ -60,7 +61,7 @@ class CoilSet(torch.utils.data.Dataset):
         x = self.transform(x)
         y = self.label[k]
         if self.vecLabel:
-            t = torch.zzeros(self.nbClass)
+            t = torch.zeros(self.nbClass)
             t[y] = 1
             y = t
         return x, y, k

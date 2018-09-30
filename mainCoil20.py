@@ -14,7 +14,7 @@ from pretrain import Pretrain
 def setPath():
     path = dict()
     path['datasetPath'] = ''
-    path['workPath'] = '/home/spyisflying/git/ddml/ex/coil100'
+    path['workPath'] = '/home/spyisflying/git/ddml/ex/coil20'
     return path
 
 def setParamPre():
@@ -24,14 +24,14 @@ def setParamPre():
     p['epoch'] = 15
     p['gpu'] = True
     p['freq'] = 3
-    p['nbClass'] = 100
+    p['nbClass'] = 20
     return p
 
 def setParam():
     param = dict()
     param['lr'] = 0.00005
     param['batch'] = 128
-    param['epoch'] = 100
+    param['epoch'] = 70
     param['gpu'] = True
     param['tau'] = 1.5
     param['beta'] = 1
@@ -63,13 +63,13 @@ def loaderList():
     trainData2 = coil.CoilSet(path['workPath'], 'train', vecLabel = False)
     valData1 = coil.CoilSet(path['workPath'], 'val', vecLabel = False)
     valData2 = coil.CoilSet(path['workPath'], 'val', vecLabel = False)
-    testData1 = coil.CoilSet(path['workPath'], 'test1', vecLabel = False)
-    testData2 = coil.CoilSet(path['workPath'], 'test2', vecLabel = False)
+    testData1 = coil.CoilSet(path['workPath'], 'test', vecLabel = False)
+    testData2 = coil.CoilSet(path['workPath'], 'test', vecLabel = False)
 
     trainLoader1 = DataLoader(trainData1, batch_size = pa['batch'], shuffle = True, drop_last = True, num_workers = 2)
     trainLoader2 = DataLoader(trainData2, batch_size = pa['batch'], shuffle = True, drop_last = True, num_workers = 2)
-    valLoader1 = DataLoader(valData1, batch_size = 128, shuffle = True, drop_last = True, num_workers = 2)
-    valLoader2 = DataLoader(valData2, batch_size = 128, shuffle = True, drop_last = True, num_workers = 2)
+    valLoader1 = DataLoader(valData1, batch_size = 8, shuffle = True, drop_last = True, num_workers = 2)
+    valLoader2 = DataLoader(valData2, batch_size = 8, shuffle = True, drop_last = True, num_workers = 2)
     testLoader1 = DataLoader(testData1, batch_size = pa['batch'], shuffle = True, drop_last = True, num_workers = 2)
     testLoader2 = DataLoader(testData2, batch_size = pa['batch'], shuffle = True, drop_last = True, num_workers = 2)
 
@@ -109,7 +109,7 @@ def main():
     pa = setParam()
     ddml = DDML(pa, featureNet, path['workPath'], loader)
     print('Training...')
-    ddml.train()
+#     ddml.train()
     ddml.featureNet.load_state_dict(torch.load(path['workPath'] + '/featureNetState'))
     print('Testing...')
     result = ddml.test()

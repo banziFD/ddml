@@ -7,31 +7,29 @@ import util.data.cifar as cifar
 import util.data.caltech as caltech
 import util.data.msrcv as msrcv
 import util.data.yaleB as yaleB
-import util.data.orl as orl
-import util.data.coil as coil
 from pretrain import Pretrain
 
 def setPath():
     path = dict()
     path['datasetPath'] = ''
-    path['workPath'] = '/home/spyisflying/git/ddml/ex/coil100'
+    path['workPath'] = '/home/spyisflying/git/ddml/ex/yaleb'
     return path
 
 def setParamPre():
     p = dict()
     p['lr'] = 0.0001
-    p['batch'] = 32
-    p['epoch'] = 15
+    p['batch'] = 64
+    p['epoch'] = 10
     p['gpu'] = True
     p['freq'] = 3
-    p['nbClass'] = 100
+    p['nbClass'] = 30
     return p
 
 def setParam():
     param = dict()
     param['lr'] = 0.00005
     param['batch'] = 128
-    param['epoch'] = 100
+    param['epoch'] = 70
     param['gpu'] = True
     param['tau'] = 1.5
     param['beta'] = 1
@@ -44,9 +42,9 @@ def loaderListPre():
     pa = setParamPre()
     workPath = path['workPath']
 
-    trainData = coil.CoilSet(workPath, 'train', vecLabel = True, nbClass = pa['nbClass'])
-    valData = coil.CoilSet(workPath, 'val', vecLabel = True, nbClass = pa['nbClass'])
-    testData = coil.CoilSet(workPath, 'test', vecLabel = True, nbClass = pa['nbClass'])
+    trainData = yaleB.YaleBSet(workPath, 'train', vecLabel = True, nbClass = pa['nbClass'])
+    valData = yaleB.YaleBSet(workPath, 'val', vecLabel = True, nbClass = pa['nbClass'])
+    testData = yaleB.YaleBSet(workPath, 'test', vecLabel = True, nbClass = pa['nbClass'])
     
     trainLoader = DataLoader(trainData, batch_size = pa['batch'], shuffle = True, drop_last = True, num_workers = 4)
     valLoader = DataLoader(valData, batch_size = pa['batch'], shuffle = True, num_workers = 2)
@@ -59,19 +57,19 @@ def loaderList():
     path = setPath()
     pa = setParam()
     
-    trainData1 = coil.CoilSet(path['workPath'], 'train', vecLabel = False)
-    trainData2 = coil.CoilSet(path['workPath'], 'train', vecLabel = False)
-    valData1 = coil.CoilSet(path['workPath'], 'val', vecLabel = False)
-    valData2 = coil.CoilSet(path['workPath'], 'val', vecLabel = False)
-    testData1 = coil.CoilSet(path['workPath'], 'test1', vecLabel = False)
-    testData2 = coil.CoilSet(path['workPath'], 'test2', vecLabel = False)
+    trainData1 = yaleB.YaleBSet(path['workPath'], 'train', vecLabel = False, nbClass = 10)
+    trainData2 = yaleB.YaleBSet(path['workPath'], 'train', vecLabel = False, nbClass = 10)
+    valData1 = yaleB.YaleBSet(path['workPath'], 'val', vecLabel = False, nbClass = 10)
+    valData2 = yaleB.YaleBSet(path['workPath'], 'val', vecLabel = False, nbClass = 10)
+    testData1 = yaleB.YaleBSet(path['workPath'], 'test1', vecLabel = False, nbClass = 10)
+    testData2 = yaleB.YaleBSet(path['workPath'], 'test2', vecLabel = False, nbClass = 10)
 
     trainLoader1 = DataLoader(trainData1, batch_size = pa['batch'], shuffle = True, drop_last = True, num_workers = 2)
     trainLoader2 = DataLoader(trainData2, batch_size = pa['batch'], shuffle = True, drop_last = True, num_workers = 2)
-    valLoader1 = DataLoader(valData1, batch_size = 128, shuffle = True, drop_last = True, num_workers = 2)
-    valLoader2 = DataLoader(valData2, batch_size = 128, shuffle = True, drop_last = True, num_workers = 2)
-    testLoader1 = DataLoader(testData1, batch_size = pa['batch'], shuffle = True, drop_last = True, num_workers = 2)
-    testLoader2 = DataLoader(testData2, batch_size = pa['batch'], shuffle = True, drop_last = True, num_workers = 2)
+    valLoader1 = DataLoader(valData1, batch_size = 64, shuffle = True, drop_last = True, num_workers = 2)
+    valLoader2 = DataLoader(valData2, batch_size = 64, shuffle = True, drop_last = True, num_workers = 2)
+    testLoader1 = DataLoader(testData1, batch_size = 128, shuffle = False, drop_last = True, num_workers = 2)
+    testLoader2 = DataLoader(testData2, batch_size = 128, shuffle = False, drop_last = True, num_workers = 2)
 
     loaderList = [trainLoader1, trainLoader2, valLoader1, valLoader2, testLoader1, testLoader2]
     return loaderList
