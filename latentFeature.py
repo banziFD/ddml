@@ -32,8 +32,8 @@ def latentFeature(featureNet, loader):
     return label, feature, key
 
 def getLoader(workPath):
-    data = cifar.CifarSet(workPath, 'test', vecLabel = False, nbClass = 10)
-    loader = DataLoader(data, batch_size = 1, shuffle = False, drop_last = False, num_workers = 2)
+    data = caltech.CaltechSet(workPath, 'image_list', vecLabel = False, nbClass = 10)
+    loader = DataLoader(data, batch_size = 128, shuffle = False, drop_last = False, num_workers = 4)
     return loader
 
 if __name__ == '__main__':
@@ -43,7 +43,7 @@ if __name__ == '__main__':
 #     cifar.prepareData10('/home/spyisflying/dataset/cifar/cifar-10-python', workPath)
 
     featureNet = ResFeature()
-    featureNet.load_state_dict(torch.load(workPath + '/featureNetState'))
+    # featureNet.load_state_dict(torch.load(workPath + '/featureNetState'))
 
     loader = getLoader(workPath)
 
@@ -52,7 +52,7 @@ if __name__ == '__main__':
 
     print('Saving data as numpy array')
     
-    mode = 'test'
+    mode = 'caltech7'
     np.save(mode + 'label', label)
     np.save(mode + 'feature', feature)
     np.save(mode + 'key', key)

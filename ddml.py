@@ -21,6 +21,10 @@ class ResFeature(nn.Module):
         y = y.reshape(-1, 512)
         return y
 
+    def getActivation(self):
+        activation = nn.Sequential(*list(self.featureNet.children())[:-1])
+        return activation    
+
 class DDMLLoss(nn.Module):
     def __init__(self, tau = 2, beta = 1):
         super(DDMLLoss, self).__init__()
