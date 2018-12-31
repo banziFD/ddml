@@ -15,7 +15,7 @@ class ResFeature(nn.Module):
         self.feature = models.resnet18(pretrained = True)
         self.feature = nn.Sequential(*list(self.feature.children())[:-1])
         self.length = 512
-    
+
     def forward(self, x):
         y = self.feature(x)
         y = y.reshape(-1, 512)
