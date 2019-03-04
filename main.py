@@ -1,120 +1,131 @@
-import torch
-from torch.utils.data import DataLoader
-from ddml import ResFeature
-from ddml import DDMLLoss
-from ddml import DDML
-import util.data.cifar as cifar
-import util.data.caltech as caltech
-import util.data.msrcv as msrcv
-import util.data.yaleB as yaleB
-import util.data.orl as orl
-import util.data.coil as coil
-from pretrain import Pretrain
+import os
+import time
+import datetime
+import configparser
+import argparse
+import numpy as np
+import tensorflow as tf
 
-def setPath():
-    path = dict()
-    path['datasetPath'] = ''
-    path['workPath'] = '/home/spyisflying/git/ddml/ex/coil100'
-    return path
+from util_model import ddml_graph
+from util_model import ddml_loss
+from util_data import get_data
 
-def setParamPre():
-    p = dict()
-    p['lr'] = 0.0001
-    p['batch'] = 32
-    p['epoch'] = 15
-    p['gpu'] = True
-    p['freq'] = 3
-    p['nbClass'] = 100
-    return p
+DEFAULT_TYPE = tf.float32
 
-def setParam():
-    param = dict()
-    param['lr'] = 0.00005
-    param['batch'] = 128
-    param['epoch'] = 100
-    param['gpu'] = True
-    param['tau'] = 1.5
-    param['beta'] = 1
-    param['freq'] = 1
-    param['milestones'] = list()
-    return param
+def ddml_train(config):
+    # load in dataset
+    train_set1 = get_data(config, "train")
+    val_set1 = get_data(config, "val")
+    train_set2 = get_data(config, "train")
+    val_set2 = get_data(config, "val")
 
-def loaderListPre():
-    path = setPath()
-    pa = setParamPre()
-    workPath = path['workPath']
+    # make iterator to go over set
+    iterator1 = tf.data.Iterator.from_structure(train_set1.output_types, train_set.output_shapes)
+    iterator2 = tf.data.Iterator.from_structure(train_set2.output_types, train_set.output_shapes)
 
-    trainData = coil.CoilSet(workPath, 'train', vecLabel = True, nbClass = pa['nbClass'])
-    valData = coil.CoilSet(workPath, 'val', vecLabel = True, nbClass = pa['nbClass'])
-    testData = coil.CoilSet(workPath, 'test', vecLabel = True, nbClass = pa['nbClass'])
-    
-    trainLoader = DataLoader(trainData, batch_size = pa['batch'], shuffle = True, drop_last = True, num_workers = 4)
-    valLoader = DataLoader(valData, batch_size = pa['batch'], shuffle = True, num_workers = 2)
-    testLoader = DataLoader(testData, batch_size = pa['batch'], shuffle = True, num_workers = 2)
-    
-    loaderList = [trainLoader, valLoader, testLoader]
-    return loaderList
+    train_init_op1 = iterator1.make_initializer(train_set1)
+    val_init_op1 = iterator1.make_initializer(val_set1)
+    train_init_op2 = iterator2.make_initializer(train_set2)
+    val_init_op2 = iterator2.make_initializer(val_set2)
+    next_element1 = iterator1.get_next()
+    next_element2 = iterator2.get_next()
+    image1, label1 = next_element1
+    image2, label2 = next_element2
 
-def loaderList():
-    path = setPath()
-    pa = setParam()
-    
-    trainData1 = coil.CoilSet(path['workPath'], 'train', vecLabel = False)
-    trainData2 = coil.CoilSet(path['workPath'], 'train', vecLabel = False)
-    valData1 = coil.CoilSet(path['workPath'], 'val', vecLabel = False)
-    valData2 = coil.CoilSet(path['workPath'], 'val', vecLabel = False)
-    testData1 = coil.CoilSet(path['workPath'], 'test1', vecLabel = False)
-    testData2 = coil.CoilSet(path['workPath'], 'test2', vecLabel = False)
+    # dummy holder to create computational graph
+    pretrain_holder = tf.placeholder(DEFAULT_TYPE, [None, 224, 224, 3])
 
-    trainLoader1 = DataLoader(trainData1, batch_size = pa['batch'], shuffle = True, drop_last = True, num_workers = 2)
-    trainLoader2 = DataLoader(trainData2, batch_size = pa['batch'], shuffle = True, drop_last = True, num_workers = 2)
-    valLoader1 = DataLoader(valData1, batch_size = 128, shuffle = True, drop_last = True, num_workers = 2)
-    valLoader2 = DataLoader(valData2, batch_size = 128, shuffle = True, drop_last = True, num_workers = 2)
-    testLoader1 = DataLoader(testData1, batch_size = pa['batch'], shuffle = True, drop_last = True, num_workers = 2)
-    testLoader2 = DataLoader(testData2, batch_size = pa['batch'], shuffle = True, drop_last = True, num_workers = 2)
+    feature1, feature2, logits = ddml_graph(image1, image2, pretrain_holder)
+    loss = ddml_loss(config, feature1, feature2, label1, label2)
+    optimizer = tf.train.AdamOptimizer(learning_rate=float(config["lr"]))
+    updates = optimizer.minimize(loss)
 
-    loaderList = [trainLoader1, trainLoader2, valLoader1, valLoader2, testLoader1, testLoader2]
-    return loaderList
+    saver = tf.train.Saver()
+    train_writer = tf.summary.FileWriter(os.path.join(config["board"], "train"), graph=tf.get_default_graph())
+    val_writer = tf.summary.FileWriter(os.path.join(config["board"], "val"))
 
-def main():
-    path = setPath()
 
-    print('Preparing data...')
-    
-    print('Loading pretrain data')
-    loader = loaderListPre()
+    with tf.Session() as sess:
+        sess.run(tf.global_variables_initializer())
 
-    print('Initializing model and pretrain...')
-    pa = setParamPre()
-    nbClass = pa['nbClass']
-    featureNet = ResFeature()
-    pre = Pretrain(pa, featureNet, path['workPath'], loader, nbClass)
-    
-    pre.train()
-    pre.classifier.load_state_dict(torch.load(path['workPath'] + '/pretrainState'))
-    pre.test()
-    torch.save(pre, path['workPath'] + '/pretrain')
-    
-    c = input('Complete pretrain, press y to continue /n')
-    if c != 'y':
-        return 0
+        for epoch in range(config["epoch"]):
+            print("training in {} epoch...".format(epoch))
+            start = time.time()
 
-    print('Loading pretrain information...')
-    state = pre.getState()
-    featureNet.load_state_dict(state)
+            # training
+            sess.run(train_init_op1)
+            sess.run(train_init_op2)
+            epoch_loss_train = 0
+            step = 0
+            try:
+                while(True):
+                    loss_current, _ = sess.run([loss, updates])
+                    loss_current = np.sum(loss_current)
+                    train_writer.add_summary(loss_current)
+                    epoch_loss_train += loss_current
+                    step += 1
+            except tf.errors.OutOfRangeError:
+                break
+            epoch_loss_train /= step
+            epoch_loss = epoch_loss_train
+            train_writer.add_summary(epoch_loss, epoch)
 
-    print('Loading data...')
-    loader = loaderList()
+            # validation
+            sess.run(val_init_op1)
+            sess.run(val_init_op2)
+            epoch_loss_val = 0
+            step = 0
+            try:
+                while(True):
+                    loss_current = sess.run(loss)
+                    loss_current = np.sum(loss_current)
+                    epoch_loss_val += loss_current
+                    step += 1
+            except tf.errors.OutOfRangeError:
+                break
+            epoch_loss_val /= step
+            epoch_loss = epoch_loss_val
+            val_writer.add_summary(epoch_loss, epoch)
 
-    pa = setParam()
-    ddml = DDML(pa, featureNet, path['workPath'], loader)
-    print('Training...')
-    ddml.train()
-    ddml.featureNet.load_state_dict(torch.load(path['workPath'] + '/featureNetState'))
-    print('Testing...')
-    result = ddml.test()
-    torch.save(result, path['workPath'] + '/result')
-    torch.save(ddml, path['workPath'] + '/ddml')
+    return None
+
+
+def ddml_pretrain():
+    pass
+
+def ddml_featru():
+    pass
+
+
+def main(config_file, process):
+    config = configparser.ConfigParser()
+    config.read(config_file)
+    config = config["nn"]
+
+    default_type = tf.float32
+
+
+
+    output1, output2, logits = ddml_graph(config, input_holder1, input_holder2, pretrain_holder)
+
+    x1 = np.random.randn(2, 224, 224, 3)
+    x2 = np.random.randn(2, 224, 224, 3)
+
+    saver = tf.train.Saver()
+
+    writer = tf.summary.FileWriter("./board/train", graph=tf.get_default_graph())
+    with tf.Session() as sess:
+        sess.run(tf.global_variables_initializer())
+        sess.run([output1, output2], feed_dict={input_holder1: x1, input_holder2: x2})
+        saver.save(sess, "./tmp/model.ckpt")
+        writer.close()
+
+
 
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser(description="Arguments for neural network")
+    parser.add_argument("-config", help="configfile", default="./config.ini")
+    parser.add_argument("-process", help="select process of neural network", default="train")
+    args = parser.parse_args()
+
+    main(args.config, args.process)
