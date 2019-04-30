@@ -1,7 +1,9 @@
 import os
-
+import pickle
 import glob
+import json
 import numpy as np
+from PIL import Image
 import tensorflow as tf
 
 def _bytes_feature(value):
@@ -49,28 +51,7 @@ def parse_example_proto(example):
                       }
     return tf.parse_single_example(example, feature_description)
 
-def _divide(keys, train_val_test):
-    length = len(keys)
-    random.shuffle(keys)
-    boundary1 = int(length * train_val_test[0])
-    boundary2 = int(boundary1 + length * train_val_test[1])
-    boundary3 = int(length * train_val_test[2])
-    train_keys = keys[0: boundary1]
-    val_keys = keys[boundary1: boundary2]
-    test_keys = keys[-boundary3:]
-    return train_keys, val_keys, test_keys
-
 def data2tfrecord(config):
-    time_stamp = datetime.datetime.utcnow().strftime("%s")
-
-    label_dict = _get_combine_label(config)
-    ignore_list = _get_combine_ignore(config)
-    for image_id in ignore_list:
-        label_dict.pop(image_id, None)
-
-    keys = list(label_dict.keys())
-    train_val_test = json.loads(config["train_val_test"])
-    train_keys, val_keys, test_keys = _divide(keys, train_val_test)
 
     output_path = config["output_path"]
     if not os.path.isdir(output_path):
@@ -83,9 +64,9 @@ def data2tfrecord(config):
 
     image_path = config["image_path"]
 
-    _tfrecord_io(image_path, label_dict, train_keys, os.path.join(output_path, "{}_train.tfrecords".format(time_stamp)))
-    _tfrecord_io(image_path, label_dict, val_keys, os.path.join(output_path, "{}_val.tfrecords".format(time_stamp)))
-    _tfrecord_io(image_path, label_dict, test_keys, os.path.join(output_path, "{}_test.tfrecords".format(time_stamp)))
+    _tfrecord_io(image_path, label_dict, train_keys, os.path.join(output_path, "train.tfrecords"))
+    _tfrecord_io(image_path, label_dict, val_keys, os.path.join(output_path, "val.tfrecords"))
+    _tfrecord_io(image_path, label_dict, test_keys, os.path.join(output_path, "test.tfrecords"))
 
     summary = dict()
     summary["dataset_size"] = len(keys)
@@ -93,7 +74,6 @@ def data2tfrecord(config):
     summary["valset_size"] = len(val_keys)
     summary["testset_size"] = len(test_keys)
     summary["ignored_image_list"] = sorted(ignore_list)
-    summary["time_stamp"] = time_stamp
 
     json.dump(summary, open(os.path.join(output_path, "{}_summary.json").format(time_stamp), 'w'))
     json.dump(train_keys, open(os.path.join(output_path, "{}_train_list.json".format(time_stamp)), 'w'))
@@ -102,31 +82,72 @@ def data2tfrecord(config):
     json.dump(label_dict, open(os.path.join(output_path, "{}_label_dict.json".format(time_stamp)), 'w'))
     print("complete!")
 
-def preprocess_train(value, classify=Flase):
+def _txt2list(metafile):
+    with open(metafile, 'r') as fp:
+        image_list = fp.read()
+        image_list = image_list.split()
+    return image_list
+
+def _cifar_unpickle(file):
+    with open(file, 'rb') as fo:
+        d = pickle.load(fo, encoding="bytes")
+    return d
+
+def preprocess_cifar100_data(dataset_path):
+    train_file = os.path.join(dataset_path, "train")
+    test_file = os.path.join(dataset_path, "test")
+    train_file = _cifar_unpickle(train_file)
+    test_file = _cifar_unpickle(test_file)
+
+    train_label = train_file[b"fine_labels"]
+    train_image = train_file[b"data"]
+
+    test_label = test_file[b"fine_labels"]
+    test_image = test_file[b"data"]
+
+    train_image = train_image.reshape(train_image.shape[0], 3, 32, 32)
+    train_image = train_image.transpose(train_image, [0, 2, 3, 1])
+    test_image = test_image.reshape(test_image.shape[0], 3, 32, 32)
+    test_image = test_image.transpose(test_image, [0, 2, 3, 1])
+
+    label_dict = dict()
+    output_path = os.path.join(output_path)
+    for i in range(train_image.shape[0]):
+        label_dict = train_label[i]
+        img = train_image[i]
+        img = Image.fromarray(img)
+        img.save(os.path.join(output_path, "{}.png".format(i)))
+
+    train_size = train_image.shape[0]
+
+    for i in range(test_image.shape[0]):
+        label_dict = test_label[i]
+        img = test_image[i]
+        img = Image.fromarray(img)
+        img.save(os.path.join(output_path, "{}.png".format(i + train_size)))
+
+    json.dump(train_label_dict, open(os.path.join(dataset_path, "train_label.json"), 'w'))
+    json.dump(test_label_dict, open(os.path.join(dataset_path, "test_label.json"), 'w'))
+
+def preprocess_train(value):
     image, label = value["image"], value["label"]
     image = tf.image.decode_jpeg(image, channels=3)
     image = tf.image.per_image_standardization(image)
     image = tf.image.resize_images(image, (224, 224))
-    if classify:
-        label = tf.one_hot(label, 101)
     return image, label
 
-def preprocess_val(value, classify=Flase):
+def preprocess_val(value):
     image, label = value["image"], value["label"]
     image = tf.image.decode_jpeg(image, channels=3)
     image = tf.image.per_image_standardization(image)
     image = tf.image.resize_images(image, (224, 224))
-    if classify:
-        label = tf.one_hot(label, 101)
     return image, label
 
-def preprocess_test(value, classify=False):
+def preprocess_test(value):
     image, label, image_id = value["image"], value["label"], value["image_id"]
     image = tf.image.decode_jpeg(image, channels=3)
     image = tf.image.per_image_standardization(image)
     image = tf.image.resize_images(image, (224, 224))
-    if classify:
-        label = tf.one_hot(label, 101)
     return image, label, image_id
 
 def fetch_data(dataset, config, flag="train"):
