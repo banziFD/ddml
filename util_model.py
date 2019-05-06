@@ -16,7 +16,6 @@ def ddml_graph(config, input_holder1, input_holder2, pretrain_holder):
         for i, layer in enumerate(base_net.layers):
             layer.trainable = True
 
-
     feature1 = base_net(input_holder1)
     feature2 = base_net(input_holder2)
 

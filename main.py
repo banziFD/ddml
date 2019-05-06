@@ -9,8 +9,11 @@ import tensorflow as tf
 from util_model import ddml_graph
 from util_model import ddml_loss
 from util_data import get_data
+from util_data import data2tfrecord
+from util_data import cifar_preprocess
 
 DEFAULT_TYPE = tf.float32
+
 
 def ddml_train(config):
     # load in dataset
@@ -98,28 +101,20 @@ def ddml_featru():
 
 
 def main(config_file, process):
-    config = configparser.ConfigParser()
-    config.read(config_file)
-    config = config["nn"]
-
-    default_type = tf.float32
-
-
-
-    output1, output2, logits = ddml_graph(config, input_holder1, input_holder2, pretrain_holder)
-
-    x1 = np.random.randn(2, 224, 224, 3)
-    x2 = np.random.randn(2, 224, 224, 3)
-
-    saver = tf.train.Saver()
-
-    writer = tf.summary.FileWriter("./board/train", graph=tf.get_default_graph())
-    with tf.Session() as sess:
-        sess.run(tf.global_variables_initializer())
-        sess.run([output1, output2], feed_dict={input_holder1: x1, input_holder2: x2})
-        saver.save(sess, "./tmp/model.ckpt")
-        writer.close()
-
+    if process == "tfrecord":
+        config = configparser.ConfigParser()
+        config.read(config_file)
+        config = config["data"]
+        cifar_preprocess(config)
+        data2tfrecord(config)
+    elif process == "train":
+        pass
+    elif process == "test":
+        pass
+    elif process == "feature":
+        pass
+    else:
+        raise ValueError("Unsupported process!")
 
 
 if __name__ == '__main__':

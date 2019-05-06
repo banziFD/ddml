@@ -1,3 +1,3 @@
 {
-    "python.pythonPath": "/Users/banzifd/miniconda3/envs/tf/bin/python"
+    "python.pythonPath": "usr/bin/python2.7"
 }

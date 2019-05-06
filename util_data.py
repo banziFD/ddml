@@ -1,8 +1,63 @@
 import os
-
+import json
+import pickle
+import datetime
+from PIL import Image
 import glob
 import numpy as np
 import tensorflow as tf
+
+def cifar_unpickle(file):
+    with open(file, 'rb') as fo:
+        dictionary = pickle.load(fo, encoding = 'bytes')
+        return dictionary
+
+def _cifar_format(image):
+    image = np.reshape(image, (image.shape[0], 3, 32, 32))
+    image = np.transpose(image, [0, 2, 3, 1])
+    return image
+
+
+def cifar_preprocess(config):
+
+    dataset_path = config["dataset_path"]
+
+    train_file = os.path.join(dataset_path, "train")
+    test_file = os.path.join(dataset_path, "test")
+
+    train_set = cifar_unpickle(train_file)
+    test_set = cifar_unpickle(test_file)
+
+    train_image = train_set[b"data"]
+    train_label = train_set[b"fine_labels"]
+
+    test_image = test_set[b"data"]
+    test_label = test_set[b"fine_labels"]
+
+    train_image = _cifar_format(train_image)
+    test_image = _cifar_format(test_image)
+
+    id_max = len(train_label) + len(test_label)
+    output_path = config["output_path"]
+
+    label = dict()
+
+    idx = 0;
+    for i in range(train_image.shape[0]):
+        current_image = Image.fromarray(train_image[i])
+        current_label = train_label[i]
+        current_image.save(os.path.join(output_path, "image", "{id:05d}.jpg".format(id=idx)))
+        label["{id:05d}".format(id=idx)] = current_label
+        idx += 1
+
+    for i in range(test_image.shape[0]):
+        current_image = Image.fromarray(train_image[i])
+        current_label = train_label[i]
+        current_image.save(os.path.join(output_path, "image", "{id:05d}.jpg".format(id=idx)))
+        label["{id:05d}".format(id=idx)] = current_label
+        idx += 1
+
+    json.dump(label, open(os.path.join(output_path, "label_dict.json"), 'w'))
 
 def _bytes_feature(value):
     return tf.train.Feature(bytes_list = tf.train.BytesList(value = [value]))
@@ -62,15 +117,11 @@ def _divide(keys, train_val_test):
 
 def data2tfrecord(config):
     time_stamp = datetime.datetime.utcnow().strftime("%s")
+    label_dict = json.load(open(config["label_file"]))
 
-    label_dict = _get_combine_label(config)
-    ignore_list = _get_combine_ignore(config)
-    for image_id in ignore_list:
-        label_dict.pop(image_id, None)
-
-    keys = list(label_dict.keys())
-    train_val_test = json.loads(config["train_val_test"])
-    train_keys, val_keys, test_keys = _divide(keys, train_val_test)
+    train_keys = json.load(open(config["train_list"]))
+    test_keys = json.load(open(config["test_list"]))
+    val_keys = json.load(open(config["val_list"]))
 
     output_path = config["output_path"]
     if not os.path.isdir(output_path):
@@ -102,7 +153,7 @@ def data2tfrecord(config):
     json.dump(label_dict, open(os.path.join(output_path, "{}_label_dict.json".format(time_stamp)), 'w'))
     print("complete!")
 
-def preprocess_train(value, classify=Flase):
+def preprocess_train(value, classify=False):
     image, label = value["image"], value["label"]
     image = tf.image.decode_jpeg(image, channels=3)
     image = tf.image.per_image_standardization(image)
@@ -111,7 +162,7 @@ def preprocess_train(value, classify=Flase):
         label = tf.one_hot(label, 101)
     return image, label
 
-def preprocess_val(value, classify=Flase):
+def preprocess_val(value, classify=False):
     image, label = value["image"], value["label"]
     image = tf.image.decode_jpeg(image, channels=3)
     image = tf.image.per_image_standardization(image)
@@ -159,3 +210,10 @@ def get_data(config, flag):
     else:
         raise ValueError("flag shoule be in {train, val, test}")
     return data, summary
+
+if __name__ == "__main__":
+    dataset_path = "/home/ubuntu/banzifd/dataset/cifar/cifar-100-python"
+    output_path = "/home/ubuntu/banzifd/dataset/cifar/cifar-100-python"
+
+    cifar_preprocess(None, dataset_path, output_path)
+    pass
