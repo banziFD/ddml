@@ -16,6 +16,10 @@ DEFAULT_TYPE = tf.float32
 
 
 def ddml_train(config):
+
+    # create tfrecord
+    
+
     # load in dataset
     train_set1 = get_data(config, "train")
     val_set1 = get_data(config, "val")
