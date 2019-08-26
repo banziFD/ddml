@@ -13,12 +13,11 @@ from util_data import data2tfrecord
 from util_data import cifar_preprocess
 
 DEFAULT_TYPE = tf.float32
-
+DATASET = ("cifar10, cifar100, imagenet, mscoco")
 
 def ddml_train(config):
 
     # create tfrecord
-    
 
     # load in dataset
     train_set1 = get_data(config, "train")
@@ -100,17 +99,25 @@ def ddml_train(config):
 def ddml_pretrain():
     pass
 
-def ddml_featru():
+def ddml_feature():
     pass
 
 
 def main(config_file, process):
-    if process == "tfrecord":
-        config = configparser.ConfigParser()
-        config.read(config_file)
-        config = config["data"]
-        cifar_preprocess(config)
-        data2tfrecord(config)
+    config = configparser.ConfigParser()
+    config.read(config_file)
+    print(process)
+    input()
+    if process == "preprocess":
+        dataset = input("which dataset are you currently working on?")
+        if dataset in DATASET:
+            config_pre = config["preprocess"]
+            config_nn = config["nn"]
+            if dataset == "cifar100":
+                cifar_preprocess(config_pre, config_nn)
+
+        else:
+            raise ValueError("Unsupported dataset!")
     elif process == "train":
         pass
     elif process == "test":

@@ -2,7 +2,7 @@ import configparser
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras.applications.mobilenet import MobileNet
-from tensorflow.layers import dense
+from tensorflow.keras.layers import dense
 
 _INPUT_SIZE = [224, 224, 3]
 DEFAULT_TYPE = tf.float32

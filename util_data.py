@@ -20,9 +20,9 @@ def _cifar_format(image):
     return image
 
 
-def cifar_preprocess(config):
-
-    dataset_path = config["dataset_path"]
+def cifar_preprocess(config_pre, config_nn):
+    dataset_path = config_pre["dataset_path"]
+    output_path = os.path.join(config_nn["workspace"])
 
     train_file = os.path.join(dataset_path, "train")
     test_file = os.path.join(dataset_path, "test")
@@ -40,7 +40,8 @@ def cifar_preprocess(config):
     test_image = _cifar_format(test_image)
 
     id_max = len(train_label) + len(test_label)
-    output_path = config["output_path"]
+    print(test_label)
+    input()
 
     label = dict()
 
